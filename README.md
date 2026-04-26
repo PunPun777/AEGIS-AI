@@ -142,7 +142,7 @@ backend/
 
 ## 👩‍💻 Author
 
-Punarvi M U
+### Punarvi M U
 ---
 
 ## ⭐ Vision
