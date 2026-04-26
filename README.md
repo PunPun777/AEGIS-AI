@@ -142,8 +142,7 @@ backend/
 
 ## 👩‍💻 Author
 
-Built as part of STRATA-AI / AEGIS-AI initiative.
-
+Punarvi M U
 ---
 
 ## ⭐ Vision
