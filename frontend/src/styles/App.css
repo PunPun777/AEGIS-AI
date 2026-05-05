@@ -688,6 +688,42 @@ body {
   padding-bottom: 16px;
 }
 
+.region-indicators {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Anomaly Display ─────────────────────────────────────────── */
+.anomaly-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+}
+
+.anomaly-label {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.anomaly-badge--true {
+  color: var(--color-conflict);
+  background: rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.anomaly-badge--false {
+  color: var(--color-normal);
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+}
+
 .region-title {
   font-size: 1.3rem;
   font-weight: 700;
