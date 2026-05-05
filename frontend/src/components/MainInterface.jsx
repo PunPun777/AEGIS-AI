@@ -49,27 +49,31 @@ const MainInterface = () => {
 
   return (
     <div className="interface-layout">
-      {/* Input Section */}
-      <section className="card interface-section" aria-label="Text input">
-        <InputBox
-          value={text}
-          onChange={setText}
-          onSubmit={handleAnalyse}
-          loading={loading}
-          error={error}
-        />
-      </section>
-
-      {/* Result Section */}
-      {prediction && (
-        <section className="interface-section" aria-label="Analysis result">
-          <ResultCard prediction={prediction} />
+      {/* Left Column */}
+      <div className="layout-column">
+        {/* Input Section */}
+        <section className="card interface-section" aria-label="Text input">
+          <InputBox
+            value={text}
+            onChange={setText}
+            onSubmit={handleAnalyse}
+            loading={loading}
+            error={error}
+          />
         </section>
-      )}
 
-      {/* Live News Section */}
-      <section className="card interface-section news-section" aria-label="Live News Analysis">
-        <div className="news-header">
+        {/* Result Section */}
+        {prediction && (
+          <section className="interface-section" aria-label="Analysis result">
+            <ResultCard prediction={prediction} />
+          </section>
+        )}
+      </div>
+
+      {/* Right Column / Live News Section */}
+      <div className="layout-column">
+        <section className="card interface-section news-section" aria-label="Live News Analysis">
+          <div className="news-header">
           <h2>Live News</h2>
           <button 
             className="analyse-btn" 
@@ -86,24 +90,41 @@ const MainInterface = () => {
           Object.keys(newsResults).length > 0 && (
             <div className="regions-container">
               {/* Region Group */}
-              {Object.entries(newsResults).map(([region, newsList]) => (
-                <div key={region} className="region-section">
-                  <h3 className="region-title">{region}</h3>
-                  <div className="news-results">
-                    {/* News Cards */}
-                    {newsList.map((news, index) => (
-                      <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
-                        <h4>{news.title}</h4>
-                        <span className="news-card__badge">{news.prediction}</span>
+              {Object.entries(newsResults).map(([region, data]) => {
+                const tesScore = data.TES;
+                let tesColorClass = "tes--green";
+                if (tesScore > 0.7) tesColorClass = "tes--red";
+                else if (tesScore >= 0.4) tesColorClass = "tes--orange";
+
+                return (
+                  /* Region Card */
+                  <div key={region} className="region-card">
+                    {/* TES Section */}
+                    <div className="region-header-row">
+                      <h3 className="region-title">{region}</h3>
+                      <div className={`tes-badge ${tesColorClass}`}>
+                        <span className="tes-label">TES</span>
+                        <span className="tes-value">{tesScore.toFixed(2)}</span>
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* Event List */}
+                    <div className="news-results">
+                      {data.events.map((news, index) => (
+                        <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
+                          <h4>{news.title}</h4>
+                          <span className="news-card__badge">{news.prediction}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )
         )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 };
