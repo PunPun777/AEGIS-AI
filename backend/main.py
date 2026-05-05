@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from fastapi.middleware.cors import CORSMiddleware
+import feedparser
 
 app = FastAPI()
 
@@ -25,6 +26,17 @@ model.to(device)
 class TextInput(BaseModel):
     text: str
 
+def fetch_news():
+    url = "https://feeds.bbci.co.uk/news/world/rss.xml"
+    feed = feedparser.parse(url)
+
+    articles = []
+
+    for entry in feed.entries[:15]: 
+        articles.append(entry.title)
+
+    return articles
+
 def predict(text: str):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
 
@@ -44,3 +56,18 @@ def predict(text: str):
 @app.post("/predict")
 def get_prediction(input: TextInput):
     return {"prediction": predict(input.text)}
+
+@app.get("/news-analysis")
+def analyze_news():
+    news_list = fetch_news()
+
+    results = []
+
+    for text in news_list:
+        prediction = predict(text)
+        results.append({
+            "title": text,
+            "prediction": prediction
+        })
+
+    return results
