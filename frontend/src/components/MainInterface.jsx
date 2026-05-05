@@ -99,12 +99,25 @@ const MainInterface = () => {
                 return (
                   /* Region Card */
                   <div key={region} className="region-card">
-                    {/* TES Section */}
+                    {/* Region Header Section */}
                     <div className="region-header-row">
                       <h3 className="region-title">{region}</h3>
-                      <div className={`tes-badge ${tesColorClass}`}>
-                        <span className="tes-label">TES</span>
-                        <span className="tes-value">{tesScore.toFixed(2)}</span>
+                      <div className="region-indicators">
+                        {/* Anomaly Section */}
+                        {data.anomaly ? (
+                          <div className="anomaly-badge anomaly-badge--true">
+                            <span className="anomaly-label">Anomaly Detected</span>
+                          </div>
+                        ) : (
+                          <div className="anomaly-badge anomaly-badge--false">
+                            <span className="anomaly-label">Normal Activity</span>
+                          </div>
+                        )}
+                        {/* TES Display */}
+                        <div className={`tes-badge ${tesColorClass}`}>
+                          <span className="tes-label">TES</span>
+                          <span className="tes-value">{tesScore.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
                     
