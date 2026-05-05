@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from app.models.schema import TextInput
 from app.services.predictor import predict
 from app.services.news_service import fetch_news
+from app.services.region_service import get_region
 
 router = APIRouter()
 
@@ -12,8 +13,9 @@ def get_prediction(input: TextInput):
 @router.get("/news-analysis")
 def analyze_news():
     news_list = fetch_news()
-    results = []
+    grouped: dict[str, list[dict]] = {}
     for text in news_list:
         prediction = predict(text)
-        results.append({"title": text, "prediction": prediction})
-    return results
+        region = get_region(text)
+        grouped.setdefault(region, []).append({"title": text, "prediction": prediction})
+    return grouped

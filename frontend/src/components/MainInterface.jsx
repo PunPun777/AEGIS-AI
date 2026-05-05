@@ -9,7 +9,7 @@ const MainInterface = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [newsResults, setNewsResults] = useState([]);
+  const [newsResults, setNewsResults] = useState({});
   const [loadingNews, setLoadingNews] = useState(false);
 
   const handleFetchNews = async () => {
@@ -83,12 +83,21 @@ const MainInterface = () => {
         {loadingNews ? (
           <div className="news-loading">Loading...</div>
         ) : (
-          newsResults.length > 0 && (
-            <div className="news-results">
-              {newsResults.map((news, index) => (
-                <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
-                  <h4>{news.title}</h4>
-                  <span className="news-card__badge">{news.prediction}</span>
+          Object.keys(newsResults).length > 0 && (
+            <div className="regions-container">
+              {/* Region Group */}
+              {Object.entries(newsResults).map(([region, newsList]) => (
+                <div key={region} className="region-section">
+                  <h3 className="region-title">{region}</h3>
+                  <div className="news-results">
+                    {/* News Cards */}
+                    {newsList.map((news, index) => (
+                      <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
+                        <h4>{news.title}</h4>
+                        <span className="news-card__badge">{news.prediction}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
