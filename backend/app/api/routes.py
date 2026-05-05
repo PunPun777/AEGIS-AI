@@ -3,6 +3,7 @@ from app.models.schema import TextInput
 from app.services.predictor import predict
 from app.services.news_service import fetch_news
 from app.services.region_service import get_region
+from app.services.tes_service import calculate_tes
 
 router = APIRouter()
 
@@ -18,4 +19,7 @@ def analyze_news():
         prediction = predict(text)
         region = get_region(text)
         grouped.setdefault(region, []).append({"title": text, "prediction": prediction})
-    return grouped
+    return {
+        region: {"TES": calculate_tes(events), "events": events}
+        for region, events in grouped.items()
+    }
