@@ -118,6 +118,13 @@ const MainInterface = () => {
                           <span className="tes-label">TES</span>
                           <span className="tes-value">{tesScore.toFixed(2)}</span>
                         </div>
+                        {/* Trend Section */}
+                        <div className={`trend-badge trend-badge--${data.trend}`}>
+                          <span className="trend-icon">
+                            {data.trend === "increasing" ? "↑" : data.trend === "decreasing" ? "↓" : "→"}
+                          </span>
+                          <span className="trend-label">{data.trend}</span>
+                        </div>
                       </div>
                     </div>
                     
