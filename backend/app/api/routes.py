@@ -5,6 +5,7 @@ from app.services.news_service import fetch_news
 from app.services.region_service import get_region
 from app.services.tes_service import calculate_tes
 from app.services.anomaly_service import detect_anomaly
+from app.services.trend_service import get_trend
 
 router = APIRouter()
 
@@ -20,11 +21,16 @@ def analyze_news():
         prediction = predict(text)
         region = get_region(text)
         grouped.setdefault(region, []).append({"title": text, "prediction": prediction})
-    return {
-        region: {
-            "TES": calculate_tes(events),
-            "anomaly": detect_anomaly(events),
+
+    result = {}
+    for region, events in grouped.items():
+        tes = calculate_tes(events)
+        anomaly = detect_anomaly(events)
+        trend = get_trend(region, tes)
+        result[region] = {
+            "TES": tes,
+            "anomaly": anomaly,
+            "trend": trend,
             "events": events,
         }
-        for region, events in grouped.items()
-    }
+    return result
