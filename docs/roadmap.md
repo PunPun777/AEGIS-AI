@@ -1,50 +1,62 @@
 # Roadmap
 
-## Phase 1 (Completed)
+## Phase 1 -- Completed
 
-- Model training
-- Backend API
-- Local inference system
-
----
-
-## Phase 2 (In Progress)
-
-- Frontend (React)
-- API integration
-- UI for predictions
+- DistilBERT model training and fine-tuning
+- FastAPI backend with prediction API
+- Local model inference system
 
 ---
 
-## Phase 3 (Next)
+## Phase 2 -- Completed
 
-- Real-time data ingestion
-- NewsAPI / GDELT integration
-- Batch processing
-
----
-
-## Phase 4
-
-- Threat Escalation Score (TES)
-- Time-series analysis
-- Anomaly detection
+- React frontend (Vite)
+- Axios-based API integration
+- Text input with classification result display
+- Responsive layout with dark glassmorphism design
 
 ---
 
-## Phase 5
+## Phase 3 -- Completed
 
-- Interactive map (Leaflet.js)
-- Region-based visualization
-- Alert system
+- RSS-based live news ingestion (BBC World via feedparser)
+- Keyword-based geographic region extraction
+- Region-grouped intelligence output
 
 ---
 
-## Phase 6
+## Phase 4 -- Completed
 
-- Model hosting (Hugging Face)
-- Backend deployment
-- Scalable architecture
+- Threat Escalation Score (TES) per region
+- Threshold-based anomaly detection per region
+- In-memory temporal trend analysis per region
+- Live intelligence dashboard with region cards, TES badges, anomaly indicators, and trend display
+
+---
+
+## Phase 5 -- Planned
+
+- Interactive geographic visualization (Leaflet.js)
+- Map-based region display with risk overlays
+- Alert system for anomaly notifications
+
+---
+
+## Phase 6 -- Planned
+
+- Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)
+- Named Entity Recognition for region and actor extraction
+- Persistent storage for historical trend data
+
+---
+
+## Phase 7 -- Planned
+
+- Model hosting via Hugging Face Hub
+- Containerization (Docker)
+- Cloud deployment (Render / AWS / GCP)
+- Authentication and rate limiting
+- Scalable production architecture
 
 ---
 
@@ -52,6 +64,7 @@
 
 A full-stack geopolitical intelligence platform capable of:
 
-- Predicting instability
-- Visualizing risk
-- Supporting decision-making
+- Real-time instability prediction
+- Multi-source data fusion
+- Geographic risk visualization
+- Decision support for analysts and organizations
