@@ -1,80 +1,140 @@
 # System Architecture
 
-## High-Level Pipeline
+## Intelligence Pipeline
 
-The system is designed as a multi-stage intelligence pipeline:
+The system operates as a multi-stage intelligence pipeline:
 
-Data → NLP Processing → Classification → Risk Signals → Visualization
-
----
-
-## Current Architecture (Phase 1)
-
-Client → FastAPI Backend → ML Model → Prediction → Response
-
----
-
-## Components
-
-### 1. Data Layer (Future)
-
-Planned sources:
-
-- GDELT
-- ACLED
-- NewsAPI
-- OpenStreetMap
+```
+RSS Feed (BBC World)
+    |
+NLP Classification (DistilBERT)
+    |
+Region Extraction (keyword matching)
+    |
+TES Calculation (weighted scoring)
+    |
+Anomaly Detection (threshold check)
+    |
+Trend Analysis (temporal comparison)
+    |
+React Dashboard (visualization)
+```
 
 ---
 
-### 2. NLP Layer
+## Backend Architecture
 
-Processes unstructured text into structured signals:
+The backend follows a modular layered design:
 
-- Tokenization
-- Text encoding
-- Context extraction
+```
+app/
+├── main.py              Application entrypoint, CORS, router registration
+├── api/
+│   └── routes.py        HTTP endpoint definitions
+├── core/
+│   └── config.py        Centralized configuration constants
+├── ml/
+│   └── model_loader.py  Model and tokenizer initialization
+├── models/
+│   └── schema.py        Pydantic request/response schemas
+└── services/
+    ├── predictor.py      NLP inference abstraction
+    ├── news_service.py   RSS feed ingestion
+    ├── region_service.py Geographic region extraction
+    ├── tes_service.py    Threat Escalation Score calculation
+    ├── anomaly_service.py Anomaly detection
+    └── trend_service.py  Temporal trend tracking
+```
+
+### Layer Responsibilities
+
+**API Layer** (`api/routes.py`):
+Defines HTTP endpoints. Orchestrates calls to the services layer. Contains no business logic.
+
+**Services Layer** (`services/`):
+Contains all business logic. Each service is a standalone module with a single responsibility. Services do not depend on each other.
+
+**ML Layer** (`ml/model_loader.py`):
+Loads the DistilBERT model and tokenizer at startup. Exports module-level `model` and `tokenizer` objects consumed by the predictor service.
+
+**Configuration Layer** (`core/config.py`):
+Stores constants: model path, RSS URL, news limit, label map. All services import configuration from this single source.
+
+**Schema Layer** (`models/schema.py`):
+Defines Pydantic models for request validation.
 
 ---
 
-### 3. Classification Layer
+## Frontend Architecture
 
-Uses a transformer model to classify events into:
+The frontend is a React 19 single-page application built with Vite:
 
-- Conflict
-- Protest
-- Normal
+```
+src/
+├── App.jsx              Router setup (BrowserRouter)
+├── main.jsx             React DOM render entrypoint
+├── pages/
+│   └── Home.jsx         Page shell: header, hero, footer
+├── components/
+│   ├── MainInterface.jsx Primary interface: text input + live news dashboard
+│   ├── InputBox.jsx      Text input with validation and loading states
+│   └── ResultCard.jsx    Single-text classification result display
+├── services/
+│   └── api.js            Axios client (predictText, fetchNewsAnalysis)
+└── styles/
+    └── App.css           Global design system (dark glassmorphism theme)
+```
+
+### Component Hierarchy
+
+```
+App
+└── Home
+    ├── Header (app-header)
+    ├── Hero (hero section)
+    ├── MainInterface
+    │   ├── InputBox
+    │   ├── ResultCard
+    │   └── Live News Dashboard
+    │       └── Region Card (per region)
+    │           ├── Anomaly Badge
+    │           ├── TES Badge
+    │           ├── Trend Badge
+    │           └── Event Cards
+    └── Footer (app-footer)
+```
 
 ---
 
-### 4. Backend Layer
+## Data Flow
 
-Handles:
+### Single Text Analysis
 
-- Model loading
-- Inference
-- API communication
+```
+User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predict()
+    -> DistilBERT inference -> label -> ResultCard
+```
+
+### Live News Analysis
+
+```
+Button Click -> fetchNewsAnalysis() -> GET /news-analysis
+    -> fetch_news() [RSS]
+    -> predict() [per article]
+    -> get_region() [per article]
+    -> group by region
+    -> calculate_tes() [per region]
+    -> detect_anomaly() [per region]
+    -> get_trend() [per region]
+    -> JSON response -> Region Cards
+```
 
 ---
 
-### 5. Visualization Layer (Future)
+## Cross-Cutting Concerns
 
-Planned features:
+**CORS**: Enabled via FastAPI middleware with permissive defaults (allow all origins). Intended for local development.
 
-- Interactive map
-- Region-based risk scores
-- Alert system
+**State Management**: React `useState` hooks. No external state library.
 
----
-
-## Future Architecture
-
-OSINT Sources
-↓
-NLP + Entity Recognition
-↓
-Anomaly Detection
-↓
-Threat Escalation Score (TES)
-↓
-Frontend Dashboard
+**Error Handling**: Frontend catches API errors and displays messages via InputBox. Backend relies on FastAPI default error responses.
