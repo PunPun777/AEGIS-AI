@@ -6,7 +6,7 @@
 
 ## Overview
 
-AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, assigns an event severity level, computes a confidence- and severity-weighted Threat Escalation Score per region, groups events by geographic region, and produces structured intelligence output with anomaly detection and trend analysis.
+AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, assigns an event severity level, generates explainable reasoning for predictions, computes a confidence- and severity-weighted Threat Escalation Score per region, groups events by geographic region, and produces structured intelligence output with anomaly detection and trend analysis.
 
 ---
 
@@ -20,6 +20,8 @@ RSS Feed (BBC World)
   Signal Confidence (softmax)
       |
   Event Severity (rule-based)
+      |
+  Explainable Intelligence (modular keyword mapping)
       |
   Region Extraction (keyword-based)
       |
@@ -42,6 +44,7 @@ RSS Feed (BBC World)
 - DistilBERT-based event classification (conflict / protest / normal)
 - Signal confidence scoring derived from model logits via softmax
 - Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL)
+- Explainable Intelligence: Modular keyword-based reasoning generation for model predictions
 - Confidence- and severity-weighted Threat Escalation Score (TES) per region
 - RSS-based live news ingestion (BBC World)
 - Keyword-based geographic region extraction (Middle East, South Asia, Europe, USA)
@@ -58,6 +61,7 @@ RSS Feed (BBC World)
 - Color-coded event classification cards
 - Signal confidence displayed as percentage with color-coded progress bar
 - Event severity displayed as a color-coded badge with severity bar
+- Explainable Intelligence: Collapsible reasoning panel detailing why a prediction was made
 - Real-time loading states and error handling
 
 ---
@@ -95,7 +99,12 @@ Classify a single text input.
 {
   "prediction": "conflict",
   "confidence": 0.9812,
-  "severity": "CRITICAL"
+  "severity": "CRITICAL",
+  "explanation": [
+    "Missile or projectile terminology detected",
+    "Aerial strike language identified",
+    "Border conflict context found"
+  ]
 }
 ```
 
@@ -115,7 +124,11 @@ Fetch and analyze live news. Returns region-grouped intelligence.
         "title": "Missile strike reported near the capital",
         "prediction": "conflict",
         "confidence": 0.9812,
-        "severity": "CRITICAL"
+        "severity": "CRITICAL",
+        "explanation": [
+          "Missile or projectile terminology detected",
+          "Aerial strike language identified"
+        ]
       }
     ]
   }
@@ -142,6 +155,7 @@ AEGIS-AI/
 │   │   │   └── schema.py
 │   │   ├── services/
 │   │   │   ├── anomaly_service.py
+│   │   │   ├── explanation_service.py
 │   │   │   ├── news_service.py
 │   │   │   ├── predictor.py
 │   │   │   ├── region_service.py
@@ -155,6 +169,10 @@ AEGIS-AI/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ConfidenceIndicator.jsx
+│   │   │   ├── intelligence/
+│   │   │   │   ├── ExplanationItem.jsx
+│   │   │   │   ├── ExplanationList.jsx
+│   │   │   │   └── ExplanationPanel.jsx
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
 │   │   │   ├── ResultCard.jsx

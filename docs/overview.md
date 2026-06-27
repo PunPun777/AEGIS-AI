@@ -56,6 +56,7 @@ The current implementation includes:
 - Event classification using a fine-tuned DistilBERT model
 - Signal confidence scoring derived from model logits via softmax
 - Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL)
+- Explainable Intelligence: Reusable, modular reasoning generation explaining model decisions
 - Confidence- and severity-weighted Threat Escalation Score (TES) per region
 - Live news ingestion via RSS (BBC World)
 - Geographic region extraction
@@ -74,5 +75,4 @@ AEGIS-AI aims to evolve into a full intelligence platform with:
 - Named Entity Recognition (NER) for region and actor extraction
 - Interactive geographic visualization (Leaflet.js)
 - Persistent storage and historical analysis
-- Explainable AI signals
 - Cloud deployment and model hosting

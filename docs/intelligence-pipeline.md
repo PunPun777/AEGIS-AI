@@ -20,7 +20,7 @@ Parses the configured RSS feed using the feedparser library. Extracts article ti
 
 **Service**: `predictor.py`
 **Input**: Single text string
-**Output**: `{ "prediction": "conflict | protest | normal", "confidence": float, "severity": str }`
+**Output**: `{ "prediction": "conflict | protest | normal", "confidence": float, "severity": str, "explanation": list[str] }`
 
 Each article title is individually tokenized and passed through the fine-tuned DistilBERT model. The model outputs raw logits for three classes. Softmax is applied over the logits to produce a normalized probability distribution. The class with the highest probability is selected as the prediction; its probability value is extracted as the confidence score.
 
@@ -58,7 +58,15 @@ Critical keywords: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `w
 
 Severity is propagated through all downstream stages. `tes_service.py` consumes the `severity` key to apply the correct multiplier.
 
-### 5. Region Extraction
+### 5. Explainable Intelligence
+
+**Service**: `explanation_service.py`
+**Input**: Prediction label string, original article text string
+**Output**: List of human-readable explanation strings
+
+Scans the text for predefined keyword groups mapped to the prediction class. Generates reusable explanation sentences (e.g., "Military terminology detected") without leaking internal rules or heuristics.
+
+### 6. Region Extraction
 
 **Service**: `region_service.py`
 **Input**: Single text string
@@ -75,22 +83,25 @@ Performs case-insensitive keyword matching against predefined keyword lists for 
 
 Returns `"Other"` if no keywords match. First matching region wins.
 
-### 6. Event Grouping
+### 7. Event Grouping
 
 **Location**: `routes.py` (orchestration logic)
 
-After classification and region extraction, events are grouped into a dictionary keyed by region name. Each event stores the article title, prediction label, confidence score, and severity level.
+After classification, explanation, and region extraction, events are grouped into a dictionary keyed by region name. Each event stores the article title, prediction label, confidence score, severity level, and explanation array.
 
 ```python
 {
     "title": "...",
     "prediction": "conflict",
     "confidence": 0.9271,
-    "severity": "CRITICAL"
+    "severity": "CRITICAL",
+    "explanation": [
+        "Military terminology detected"
+    ]
 }
 ```
 
-### 7. Threat Escalation Score (TES)
+### 8. Threat Escalation Score (TES)
 
 **Service**: `tes_service.py`
 **Input**: List of events for a region
@@ -137,7 +148,7 @@ Returns a float rounded to four decimal places. Backward compatible: `confidence
 | >= 0.4 | Moderate |
 | < 0.4 | Low |
 
-### 8. Anomaly Detection
+### 9. Anomaly Detection
 
 **Service**: `anomaly_service.py`
 **Input**: List of events for a region
@@ -145,7 +156,7 @@ Returns a float rounded to four decimal places. Backward compatible: `confidence
 
 Calculates the ratio of high-severity events (conflict + protest) to total events. If the ratio exceeds 0.6 (60%), the region is flagged as anomalous.
 
-### 9. Trend Analysis
+### 10. Trend Analysis
 
 **Service**: `trend_service.py`
 **Input**: Region name, current TES value
@@ -177,7 +188,10 @@ The pipeline produces a JSON object keyed by region:
         "title": "Article headline text",
         "prediction": "conflict",
         "confidence": 0.9812,
-        "severity": "CRITICAL"
+        "severity": "CRITICAL",
+        "explanation": [
+          "Military terminology detected"
+        ]
       }
     ]
   }
@@ -195,12 +209,12 @@ fetch_news()
 [article_1, article_2, ..., article_N]
     |
     |--- for each article:
-    |       predict(article)     -> { prediction, confidence, severity }
+    |       predict(article)     -> { prediction, confidence, severity, explanation }
     |       get_region(article)  -> region
-    |       group into: { region: [{ title, prediction, confidence, severity }] }
+    |       group into: { region: [{ title, prediction, confidence, severity, explanation }] }
     |
     v
-{ region: [{ title, prediction, confidence, severity }] }
+{ region: [{ title, prediction, confidence, severity, explanation }] }
     |
     |--- for each region:
     |       calculate_tes(events)

@@ -28,6 +28,7 @@ backend/
 │   └── services/
 │       ├── __init__.py
 │       ├── anomaly_service.py
+│       ├── explanation_service.py
 │       ├── news_service.py
 │       ├── predictor.py
 │       ├── region_service.py
@@ -70,7 +71,7 @@ backend/
 `app/models/schema.py` defines:
 
 - `TextInput`: Pydantic model with a single `text: str` field. Used as the request body for `POST /predict`.
-- `PredictionResult`: Pydantic model with `prediction: str`, `confidence: float`, and `severity: str` fields. Used as the typed response model for `POST /predict`.
+- `PredictionResult`: Pydantic model with `prediction: str`, `confidence: float`, `severity: str`, and `explanation: list[str]` fields. Used as the typed response model for `POST /predict`.
 
 ---
 
@@ -80,7 +81,7 @@ backend/
 
 **Function**: `predict(text: str) -> dict`
 
-Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Calls `get_severity()` with the resolved prediction label and the original text to produce the severity level.
+Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Calls `get_severity()` with the resolved prediction label and the original text to produce the severity level. Finally, calls `generate_explanation()` to derive the reasoning string array.
 
 **Returns**:
 
@@ -89,8 +90,17 @@ Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Appl
     "prediction": "conflict",   # str
     "confidence": 0.9271,       # float, 0.0–1.0
     "severity": "CRITICAL",     # str
+    "explanation": [            # list[str]
+        "Military terminology detected"
+    ]
 }
 ```
+
+### explanation_service.py
+
+**Function**: `generate_explanation(text: str, prediction: str) -> list[str]`
+
+Implements modular, rule-based reasoning generation. Scans the lowercase text against predefined groups of keywords (e.g., military, protests, economic) categorized by the `prediction` label. Each matching keyword group appends a human-readable analyst sentence to the list. If no keywords match, falls back to a generic explanation string for that class. Keeps inference and keyword logic strictly decoupled.
 
 ### severity_service.py
 
