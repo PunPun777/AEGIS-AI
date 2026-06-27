@@ -6,7 +6,7 @@
 
 ## Overview
 
-AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, groups events by geographic region, and produces structured intelligence output with threat scoring, anomaly detection, and trend analysis.
+AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, assigns an event severity level, groups events by geographic region, and produces structured intelligence output with threat scoring, anomaly detection, and trend analysis.
 
 ---
 
@@ -18,6 +18,8 @@ RSS Feed (BBC World)
   NLP Classification (DistilBERT)
       |
   Signal Confidence (softmax)
+      |
+  Event Severity (rule-based)
       |
   Region Extraction (keyword-based)
       |
@@ -39,6 +41,7 @@ RSS Feed (BBC World)
 - Modular FastAPI architecture with separated routes, services, and configuration
 - DistilBERT-based event classification (conflict / protest / normal)
 - Signal confidence scoring derived from model logits via softmax
+- Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL)
 - RSS-based live news ingestion (BBC World)
 - Keyword-based geographic region extraction (Middle East, South Asia, Europe, USA)
 - Threat Escalation Score (TES) calculation per region
@@ -53,6 +56,7 @@ RSS Feed (BBC World)
 - Region cards with TES, anomaly, and trend indicators
 - Color-coded event classification cards
 - Signal confidence displayed as percentage with color-coded progress bar
+- Event severity displayed as a color-coded badge with a severity bar
 - Real-time loading states and error handling
 
 ---
@@ -81,15 +85,16 @@ Classify a single text input.
 **Request:**
 ```json
 {
-  "text": "Mass protests erupted in the capital"
+  "text": "Missile strike reported near the capital"
 }
 ```
 
 **Response:**
 ```json
 {
-  "prediction": "protest",
-  "confidence": 0.9642
+  "prediction": "conflict",
+  "confidence": 0.9812,
+  "severity": "CRITICAL"
 }
 ```
 
@@ -108,7 +113,8 @@ Fetch and analyze live news. Returns region-grouped intelligence.
       {
         "title": "...",
         "prediction": "conflict",
-        "confidence": 0.9271
+        "confidence": 0.9271,
+        "severity": "HIGH"
       }
     ]
   }
@@ -136,6 +142,7 @@ AEGIS-AI/
 │   │   │   ├── news_service.py
 │   │   │   ├── predictor.py
 │   │   │   ├── region_service.py
+│   │   │   ├── severity_service.py
 │   │   │   ├── tes_service.py
 │   │   │   └── trend_service.py
 │   │   └── main.py
@@ -147,7 +154,8 @@ AEGIS-AI/
 │   │   │   ├── ConfidenceIndicator.jsx
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
-│   │   │   └── ResultCard.jsx
+│   │   │   ├── ResultCard.jsx
+│   │   │   └── SeverityBadge.jsx
 │   │   ├── pages/
 │   │   │   └── Home.jsx
 │   │   ├── services/
@@ -202,6 +210,8 @@ Development server: http://localhost:5173
 - Model trained on AG News, not real geopolitical datasets
 - Region extraction is keyword-based, not NER-based
 - Trend analysis uses in-memory storage (resets on server restart)
+- Severity classification is rule-based, not learned
+- Confidence scores are not calibrated
 - No persistent database
 - No authentication or rate limiting
 

@@ -20,7 +20,7 @@ Parses the configured RSS feed using the feedparser library. Extracts article ti
 
 **Service**: `predictor.py`
 **Input**: Single text string
-**Output**: `{ "prediction": "conflict | protest | normal", "confidence": float }`
+**Output**: `{ "prediction": "conflict | protest | normal", "confidence": float, "severity": str }`
 
 Each article title is individually tokenized and passed through the fine-tuned DistilBERT model. The model outputs raw logits for three classes. Softmax is applied over the logits to produce a normalized probability distribution. The class with the highest probability is selected as the prediction; its probability value is extracted as the confidence score.
 
@@ -32,7 +32,7 @@ pred_index = probabilities.argmax().item()
 confidence = probabilities[0][pred_index].item()
 ```
 
-Confidence is a float in `[0.0, 1.0]`. It represents the model's certainty for the predicted class relative to all other classes after normalization. It is not a heuristic.
+Confidence is a float in `[0.0, 1.0]`. It is not a heuristic.
 
 ### 3. Signal Confidence
 
@@ -40,9 +40,42 @@ Confidence is a float in `[0.0, 1.0]`. It represents the model's certainty for t
 **Input**: Softmax probability tensor from stage 2
 **Output**: Float in `[0.0, 1.0]`
 
-This stage is not a separate service call. Confidence is produced as part of the prediction result and propagated through the pipeline. Every event entering downstream stages carries both a `prediction` label and a `confidence` score.
+Confidence is produced as part of the prediction result and propagated through the pipeline. Every event entering downstream stages carries a `confidence` score.
 
-### 4. Region Extraction
+### 4. Event Severity
+
+**Service**: `severity_service.py`
+**Input**: Prediction label string, original article text string
+**Output**: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"`
+
+Implements a two-level rule-based severity assignment:
+
+**Level 1 — Prediction-based defaults:**
+
+| Prediction | Default Severity |
+|---|---|
+| `"normal"` | `"LOW"` |
+| `"protest"` | `"MEDIUM"` |
+| `"conflict"` | `"HIGH"` (escalated to CRITICAL if keywords match) |
+
+**Level 2 — Keyword escalation for conflict events:**
+
+The headline text is scanned (case-insensitive) against a `frozenset` of critical keywords:
+
+| Keyword | Effect |
+|---|---|
+| `missile` | Escalates to CRITICAL |
+| `airstrike` | Escalates to CRITICAL |
+| `explosion` | Escalates to CRITICAL |
+| `terror` | Escalates to CRITICAL |
+| `invasion` | Escalates to CRITICAL |
+| `war` | Escalates to CRITICAL |
+
+If any keyword is present in the text, severity is `"CRITICAL"`. Otherwise it remains `"HIGH"`.
+
+Severity is produced within the same `predict()` call as classification and confidence. No additional API call or service invocation is required. All three values — `prediction`, `confidence`, `severity` — are returned together in a single dict.
+
+### 5. Region Extraction
 
 **Service**: `region_service.py`
 **Input**: Single text string
@@ -59,21 +92,22 @@ Performs case-insensitive keyword matching against predefined keyword lists for 
 
 Returns `"Other"` if no keywords match. First matching region wins.
 
-### 5. Event Grouping
+### 6. Event Grouping
 
 **Location**: `routes.py` (orchestration logic)
 
-After classification and region extraction, events are grouped into a dictionary keyed by region name. Each event stores the article title, its prediction label, and its confidence score.
+After classification and region extraction, events are grouped into a dictionary keyed by region name. Each event stores the article title, prediction label, confidence score, and severity level.
 
 ```python
 {
     "title": "...",
     "prediction": "conflict",
-    "confidence": 0.9271
+    "confidence": 0.9271,
+    "severity": "CRITICAL"
 }
 ```
 
-### 6. Threat Escalation Score (TES)
+### 7. Threat Escalation Score (TES)
 
 **Service**: `tes_service.py`
 **Input**: List of events for a region
@@ -94,7 +128,7 @@ Formula: `TES = sum(weight per event) / number of events`
 - TES >= 0.4: Moderate threat (orange)
 - TES < 0.4: Low threat (green)
 
-### 7. Anomaly Detection
+### 8. Anomaly Detection
 
 **Service**: `anomaly_service.py`
 **Input**: List of events for a region
@@ -102,7 +136,7 @@ Formula: `TES = sum(weight per event) / number of events`
 
 Calculates the ratio of high-severity events (conflict + protest) to total events. If the ratio exceeds 0.6 (60%), the region is flagged as anomalous.
 
-### 8. Trend Analysis
+### 9. Trend Analysis
 
 **Service**: `trend_service.py`
 **Input**: Region name, current TES value
@@ -126,14 +160,15 @@ The pipeline produces a JSON object keyed by region:
 ```json
 {
   "Region Name": {
-    "TES": 0.72,
+    "TES": 0.87,
     "anomaly": true,
     "trend": "increasing",
     "events": [
       {
         "title": "Article headline text",
         "prediction": "conflict",
-        "confidence": 0.9271
+        "confidence": 0.9812,
+        "severity": "CRITICAL"
       }
     ]
   }
@@ -151,12 +186,12 @@ fetch_news()
 [article_1, article_2, ..., article_N]
     |
     |--- for each article:
-    |       predict(article)     -> { prediction, confidence }
+    |       predict(article)     -> { prediction, confidence, severity }
     |       get_region(article)  -> region
-    |       group into: { region: [{ title, prediction, confidence }] }
+    |       group into: { region: [{ title, prediction, confidence, severity }] }
     |
     v
-{ region: [{ title, prediction, confidence }] }
+{ region: [{ title, prediction, confidence, severity }] }
     |
     |--- for each region:
     |       calculate_tes(events)        -> TES
@@ -174,6 +209,7 @@ fetch_news()
 - Pipeline runs synchronously per request
 - Model inference is the primary bottleneck (CPU-bound, per-article)
 - Softmax adds negligible overhead (tensor operation on already-computed logits)
+- Severity classification adds negligible overhead (frozenset lookup, no I/O)
 - RSS fetch adds network latency on each request
 - No caching of RSS results or model predictions
 - Typical execution: 15 articles processed per request

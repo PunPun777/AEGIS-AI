@@ -51,8 +51,9 @@
 5. Argmax → predicted class index
 6. Confidence extraction → `probabilities[0][pred_index].item()`
 7. Label mapping via `LABEL_MAP`
+8. Severity assignment via `severity_service.get_severity(prediction, text)`
 
-The inference function returns both the predicted label and the confidence score in a single pass. No separate inference call is required for confidence.
+The inference function returns `prediction`, `confidence`, and `severity` in a single pass.
 
 ---
 
@@ -66,6 +67,22 @@ The confidence score is the softmax probability of the predicted class. It quant
 - **Formatting**: Raw float returned by the API; percentage conversion is the responsibility of the frontend
 
 A confidence of `0.96` means the model assigned 96% of its probability mass to the predicted class. A confidence below `0.70` signals low certainty and may indicate ambiguous input.
+
+---
+
+## Severity Classification
+
+Severity is not produced by the model. It is assigned by `severity_service.py` using a rule-based approach applied after inference.
+
+| Prediction | Base Severity | Escalation Condition | Escalated Severity |
+|---|---|---|---|
+| `normal` | `LOW` | N/A | N/A |
+| `protest` | `MEDIUM` | N/A | N/A |
+| `conflict` | `HIGH` | Critical keyword in text | `CRITICAL` |
+
+Critical keywords: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`.
+
+Severity is deterministic given the same prediction and text input. It does not use model probabilities.
 
 ---
 
@@ -84,6 +101,7 @@ A confidence of `0.96` means the model assigned 96% of its probability mass to t
 - Strong keyword detection
 - Limited semantic generalization
 - Confidence scores skew high due to heuristic training labels; values should be interpreted relative to each other rather than as calibrated probabilities
+- Severity is entirely rule-based; it reflects lexical escalation signals, not deeper semantic understanding
 
 ---
 
@@ -93,6 +111,7 @@ A confidence of `0.96` means the model assigned 96% of its probability mass to t
 - Over-reliance on keywords
 - Limited contextual reasoning
 - Confidence scores are not calibrated (temperature scaling not applied)
+- Severity keyword list is fixed and does not adapt to emerging terminology
 
 ---
 
@@ -100,6 +119,7 @@ A confidence of `0.96` means the model assigned 96% of its probability mass to t
 
 - Train on real geopolitical datasets
 - Apply confidence calibration (temperature scaling, Platt scaling)
+- Replace rule-based severity with a learned severity classifier
 - Add contextual embeddings
 - Use multi-label classification
 - Incorporate sentiment + NER
