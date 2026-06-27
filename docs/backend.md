@@ -31,6 +31,7 @@ backend/
 │       ├── news_service.py
 │       ├── predictor.py
 │       ├── region_service.py
+│       ├── severity_service.py
 │       ├── tes_service.py
 │       └── trend_service.py
 ├── model/               Trained DistilBERT weights and tokenizer
@@ -69,7 +70,7 @@ backend/
 `app/models/schema.py` defines:
 
 - `TextInput`: Pydantic model with a single `text: str` field. Used as the request body for `POST /predict`.
-- `PredictionResult`: Pydantic model with `prediction: str` and `confidence: float` fields. Used as the typed response model for `POST /predict`.
+- `PredictionResult`: Pydantic model with `prediction: str`, `confidence: float`, and `severity: str` fields. Used as the typed response model for `POST /predict`.
 
 ---
 
@@ -79,7 +80,7 @@ backend/
 
 **Function**: `predict(text: str) -> dict`
 
-Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score.
+Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Calls `get_severity()` with the resolved prediction label and the original text to produce the severity level.
 
 **Confidence Derivation**:
 
@@ -89,16 +90,43 @@ pred_index = probabilities.argmax().item()
 confidence = probabilities[0][pred_index].item()
 ```
 
-Confidence is a float in the range `[0.0, 1.0]`, representing the model's normalized probability for the predicted class. It is rounded to four decimal places. Formatting as a percentage is the responsibility of the consuming layer (frontend).
-
 **Returns**:
 
 ```python
 {
     "prediction": "conflict",   # str
-    "confidence": 0.9271        # float, 0.0–1.0
+    "confidence": 0.9271,       # float, 0.0–1.0
+    "severity": "CRITICAL",     # str
 }
 ```
+
+### severity_service.py
+
+**Function**: `get_severity(prediction: str, text: str) -> str`
+
+Implements rule-based severity assignment. Severity is determined by a two-level decision:
+
+1. If `prediction` is not `"conflict"`, the severity is looked up from `SEVERITY_MAP`:
+
+| Prediction | Severity |
+|---|---|
+| `"normal"` | `"LOW"` |
+| `"protest"` | `"MEDIUM"` |
+
+2. If `prediction` is `"conflict"`, the headline text is scanned (case-insensitive) against the `CRITICAL_KEYWORDS` set:
+
+| Keyword | Trigger |
+|---|---|
+| `missile` | CRITICAL |
+| `airstrike` | CRITICAL |
+| `explosion` | CRITICAL |
+| `terror` | CRITICAL |
+| `invasion` | CRITICAL |
+| `war` | CRITICAL |
+
+If any keyword is found, severity is `"CRITICAL"`. Otherwise severity is `"HIGH"`.
+
+`CRITICAL_KEYWORDS` is implemented as a `frozenset` for O(1) membership testing. The function is a pure function with no side effects.
 
 ### news_service.py
 
@@ -136,7 +164,7 @@ Maintains an in-memory dictionary of previous TES values per region. Compares cu
 
 `app/api/routes.py` defines two endpoints:
 
-- `POST /predict`: Single text classification returning prediction and confidence
+- `POST /predict`: Single text classification returning prediction, confidence, and severity
 - `GET /news-analysis`: Live news intelligence analysis
 
 See [api.md](api.md) for full endpoint documentation.

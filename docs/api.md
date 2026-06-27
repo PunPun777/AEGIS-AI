@@ -12,7 +12,7 @@ http://127.0.0.1:8000
 
 ### POST /predict
 
-Classify a single text input into a geopolitical event category. Returns the predicted class label and the model's confidence score for that prediction.
+Classify a single text input into a geopolitical event category. Returns the predicted class label, the model's confidence score, and the derived severity level.
 
 #### Request
 
@@ -27,7 +27,8 @@ Classify a single text input into a geopolitical event category. Returns the pre
 ```json
 {
   "prediction": "conflict | protest | normal",
-  "confidence": 0.0
+  "confidence": 0.0,
+  "severity": "LOW | MEDIUM | HIGH | CRITICAL"
 }
 ```
 
@@ -35,21 +36,79 @@ Classify a single text input into a geopolitical event category. Returns the pre
 |---|---|---|
 | `prediction` | `string` | Predicted class: `"conflict"`, `"protest"`, or `"normal"` |
 | `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
+| `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 
-#### Example
+#### Examples
 
-**Request:**
+**Conflict with critical keyword:**
+
+Request:
+```json
+{
+  "text": "Missile strike reported near the capital"
+}
+```
+
+Response:
+```json
+{
+  "prediction": "conflict",
+  "confidence": 0.9812,
+  "severity": "CRITICAL"
+}
+```
+
+**Conflict without critical keyword:**
+
+Request:
+```json
+{
+  "text": "Armed clashes reported on the border"
+}
+```
+
+Response:
+```json
+{
+  "prediction": "conflict",
+  "confidence": 0.9103,
+  "severity": "HIGH"
+}
+```
+
+**Protest:**
+
+Request:
 ```json
 {
   "text": "Mass protests erupted in the capital"
 }
 ```
 
-**Response:**
+Response:
 ```json
 {
   "prediction": "protest",
-  "confidence": 0.9642
+  "confidence": 0.9642,
+  "severity": "MEDIUM"
+}
+```
+
+**Normal:**
+
+Request:
+```json
+{
+  "text": "Trade negotiations concluded in Geneva"
+}
+```
+
+Response:
+```json
+{
+  "prediction": "normal",
+  "confidence": 0.8834,
+  "severity": "LOW"
 }
 ```
 
@@ -61,7 +120,7 @@ Classify a single text input into a geopolitical event category. Returns the pre
 
 ### GET /news-analysis
 
-Fetch live news from RSS, classify each article, derive confidence for each classification, group by geographic region, and return intelligence output with TES, anomaly status, and trend.
+Fetch live news from RSS, classify each article, derive confidence and severity for each classification, group by geographic region, and return intelligence output with TES, anomaly status, and trend.
 
 #### Request
 
@@ -85,6 +144,7 @@ Each event in the `events` array:
 | `title` | `string` | Article headline |
 | `prediction` | `string` | Classification: `"conflict"`, `"protest"`, or `"normal"` |
 | `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
+| `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 
 #### Example Response
 
@@ -98,12 +158,20 @@ Each event in the `events` array:
       {
         "title": "Airstrikes reported in northern Syria",
         "prediction": "conflict",
-        "confidence": 0.9812
+        "confidence": 0.9812,
+        "severity": "CRITICAL"
+      },
+      {
+        "title": "Armed clashes continue near the border",
+        "prediction": "conflict",
+        "confidence": 0.9103,
+        "severity": "HIGH"
       },
       {
         "title": "Iran nuclear talks resume in Vienna",
         "prediction": "normal",
-        "confidence": 0.7341
+        "confidence": 0.7341,
+        "severity": "LOW"
       }
     ]
   },
@@ -113,14 +181,34 @@ Each event in the `events` array:
     "trend": "stable",
     "events": [
       {
+        "title": "Protests grow outside parliament in Islamabad",
+        "prediction": "protest",
+        "confidence": 0.8807,
+        "severity": "MEDIUM"
+      },
+      {
         "title": "India-Pakistan border tensions ease",
         "prediction": "normal",
-        "confidence": 0.8107
+        "confidence": 0.8107,
+        "severity": "LOW"
       }
     ]
   }
 }
 ```
+
+---
+
+## Severity Level Reference
+
+| Severity | Trigger Condition | Display Color |
+|---|---|---|
+| `CRITICAL` | `conflict` prediction + critical keyword in headline | Red |
+| `HIGH` | `conflict` prediction + no critical keyword | Orange |
+| `MEDIUM` | `protest` prediction | Yellow |
+| `LOW` | `normal` prediction | Green |
+
+Critical keywords: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`.
 
 ---
 

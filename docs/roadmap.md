@@ -46,7 +46,20 @@
 
 ---
 
-## Phase 5.2 — Planned
+## Phase 5.2 — Completed
+
+- Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL)
+- `severity_service.py` implementing keyword-escalation logic for conflict events
+- `POST /predict` response extended with `severity` string field
+- `GET /news-analysis` events extended with `severity` string field
+- `PredictionResult` Pydantic schema updated with `severity: str`
+- `SeverityBadge` reusable React component
+- Severity displayed alongside confidence in `ResultCard` and every live news event card
+- Color-coded severity bar: green (LOW), yellow (MEDIUM), orange (HIGH), red (CRITICAL)
+
+---
+
+## Phase 5.3 — Planned
 
 - Interactive geographic visualization (Leaflet.js)
 - Map-based region display with risk overlays

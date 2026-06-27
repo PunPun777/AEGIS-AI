@@ -1,6 +1,6 @@
 import React from "react";
 import ConfidenceIndicator from "./ConfidenceIndicator";
-
+import SeverityBadge from "./SeverityBadge";
 
 /** Maps prediction labels to display metadata */
 const PREDICTION_META = {
@@ -27,7 +27,7 @@ const PREDICTION_META = {
   },
 };
 
-const ResultCard = ({ prediction, confidence }) => {
+const ResultCard = ({ prediction, confidence, severity }) => {
   const meta = PREDICTION_META[prediction] ?? {
     label: prediction?.toUpperCase() ?? "UNKNOWN",
     icon: "⚪",
@@ -40,7 +40,6 @@ const ResultCard = ({ prediction, confidence }) => {
       {/* Header */}
       <div className="result-card__header">
         <span className="result-card__badge">ANALYSIS COMPLETE</span>
-        <span className="result-card__severity">{meta.severity}</span>
       </div>
 
       {/* Icon + Label */}
@@ -54,12 +53,11 @@ const ResultCard = ({ prediction, confidence }) => {
       {/* Description */}
       <p className="result-card__description">{meta.description}</p>
 
-      {/* Confidence Indicator */}
-      {confidence !== undefined && (
-        <div className="result-card__confidence-wrapper">
-          <ConfidenceIndicator confidence={confidence} />
-        </div>
-      )}
+      {/* Meta Indicators */}
+      <div className="result-card__meta-wrapper">
+        <SeverityBadge severity={severity || meta.severity} />
+        {confidence !== undefined && <ConfidenceIndicator confidence={confidence} />}
+      </div>
     </div>
   );
 };
