@@ -15,7 +15,7 @@ Event Severity (rule-based)
     |
 Region Extraction (keyword matching)
     |
-TES Calculation (weighted scoring)
+TES Calculation (prediction_weight × confidence × severity_multiplier)
     |
 Anomaly Detection (threshold check)
     |
@@ -46,7 +46,7 @@ app/
     ├── severity_service.py Rule-based event severity classification
     ├── news_service.py    RSS feed ingestion
     ├── region_service.py  Geographic region extraction
-    ├── tes_service.py     Threat Escalation Score calculation
+    ├── tes_service.py     Confidence- and severity-weighted TES calculation
     ├── anomaly_service.py Anomaly detection
     └── trend_service.py   Temporal trend tracking
 ```
@@ -57,7 +57,7 @@ app/
 Defines HTTP endpoints. Orchestrates calls to the services layer. Contains no business logic.
 
 **Services Layer** (`services/`):
-Contains all business logic. Each service is a standalone module with a single responsibility. Services do not depend on each other, with the exception that `predictor.py` calls `severity_service.py` to enrich its output before returning.
+Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` calls `severity_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score.
 
 **ML Layer** (`ml/model_loader.py`):
 Loads the DistilBERT model and tokenizer at startup. Exports module-level `model` and `tokenizer` objects consumed by the predictor service.
@@ -85,7 +85,8 @@ src/
 │   ├── InputBox.jsx         Text input with validation and loading states
 │   ├── ResultCard.jsx       Single-text classification result display
 │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage and progress bar
-│   └── SeverityBadge.jsx    Reusable severity level badge with colored bar
+│   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
+│   └── TESBadge.jsx         Reusable TES score display with risk category label
 ├── services/
 │   └── api.js               Axios client (predictText, fetchNewsAnalysis)
 └── styles/
@@ -107,7 +108,7 @@ App
     │   └── Live News Dashboard
     │       └── Region Card (per region)
     │           ├── Anomaly Badge
-    │           ├── TES Badge
+    │           ├── TESBadge
     │           ├── Trend Badge
     │           └── Event Cards
     │               ├── SeverityBadge
@@ -137,9 +138,11 @@ Button Click -> fetchNewsAnalysis() -> GET /news-analysis
     -> get_region() [per article]
     -> group by region -> { region: [{ title, prediction, confidence, severity }] }
     -> calculate_tes() [per region]
+        -> sum(prediction_weight × confidence × severity_multiplier) / n
     -> detect_anomaly() [per region]
     -> get_trend() [per region]
     -> JSON response -> Region Cards
+        -> TESBadge (score + risk category)
         -> Event Cards -> SeverityBadge + ConfidenceIndicator
 ```
 

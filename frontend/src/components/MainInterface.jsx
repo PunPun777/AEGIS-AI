@@ -3,6 +3,7 @@ import InputBox from "./InputBox";
 import ResultCard from "./ResultCard";
 import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
+import TESBadge from "./TESBadge";
 import { fetchNewsAnalysis, predictText } from "../services/api";
 
 const MainInterface = () => {
@@ -97,11 +98,6 @@ const MainInterface = () => {
             <div className="regions-container">
               {/* Region Group */}
               {Object.entries(newsResults).map(([region, data]) => {
-                const tesScore = data.TES;
-                let tesColorClass = "tes--green";
-                if (tesScore > 0.7) tesColorClass = "tes--red";
-                else if (tesScore >= 0.4) tesColorClass = "tes--orange";
-
                 return (
                   /* Region Card */
                   <div key={region} className="region-card">
@@ -120,10 +116,7 @@ const MainInterface = () => {
                           </div>
                         )}
                         {/* TES Display */}
-                        <div className={`tes-badge ${tesColorClass}`}>
-                          <span className="tes-label">TES</span>
-                          <span className="tes-value">{tesScore.toFixed(2)}</span>
-                        </div>
+                        <TESBadge tesScore={data.TES} />
                         {/* Trend Section */}
                         <div className={`trend-badge trend-badge--${data.trend}`}>
                           <span className="trend-icon">

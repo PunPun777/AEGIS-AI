@@ -44,9 +44,7 @@ Classify a single text input into a geopolitical event category. Returns the pre
 
 Request:
 ```json
-{
-  "text": "Missile strike reported near the capital"
-}
+{ "text": "Missile strike reported near the capital" }
 ```
 
 Response:
@@ -62,9 +60,7 @@ Response:
 
 Request:
 ```json
-{
-  "text": "Armed clashes reported on the border"
-}
+{ "text": "Armed clashes reported on the border" }
 ```
 
 Response:
@@ -80,9 +76,7 @@ Response:
 
 Request:
 ```json
-{
-  "text": "Mass protests erupted in the capital"
-}
+{ "text": "Mass protests erupted in the capital" }
 ```
 
 Response:
@@ -98,9 +92,7 @@ Response:
 
 Request:
 ```json
-{
-  "text": "Trade negotiations concluded in Geneva"
-}
+{ "text": "Trade negotiations concluded in Geneva" }
 ```
 
 Response:
@@ -120,7 +112,7 @@ Response:
 
 ### GET /news-analysis
 
-Fetch live news from RSS, classify each article, derive confidence and severity for each classification, group by geographic region, and return intelligence output with TES, anomaly status, and trend.
+Fetch live news from RSS, classify each article, derive confidence and severity, group by geographic region, and return intelligence output with weighted TES, anomaly status, and trend.
 
 #### Request
 
@@ -132,7 +124,7 @@ Returns a JSON object keyed by region name. Each region contains:
 
 | Field | Type | Description |
 |---|---|---|
-| `TES` | `float` | Threat Escalation Score (0.0 – 1.0) |
+| `TES` | `float` | Confidence- and severity-weighted Threat Escalation Score (range `[0.0, 1.5]`) |
 | `anomaly` | `boolean` | Whether the region exceeds the anomaly threshold |
 | `trend` | `string` | Temporal trend: `"increasing"`, `"decreasing"`, or `"stable"` |
 | `events` | `array` | List of classified news events |
@@ -146,12 +138,26 @@ Each event in the `events` array:
 | `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
 | `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 
+#### TES Calculation
+
+```
+event_score = prediction_weight × confidence × severity_multiplier
+TES = average(event_score) over all events in the region
+```
+
+| Prediction | Weight | Severity | Multiplier |
+|---|---|---|---|
+| conflict | 1.0 | CRITICAL | 1.5 |
+| protest | 0.6 | HIGH | 1.2 |
+| normal | 0.2 | MEDIUM | 1.0 |
+| — | — | LOW | 0.8 |
+
 #### Example Response
 
 ```json
 {
   "Middle East": {
-    "TES": 0.87,
+    "TES": 1.2164,
     "anomaly": true,
     "trend": "increasing",
     "events": [
@@ -176,7 +182,7 @@ Each event in the `events` array:
     ]
   },
   "South Asia": {
-    "TES": 0.40,
+    "TES": 0.5285,
     "anomaly": false,
     "trend": "stable",
     "events": [
@@ -196,6 +202,19 @@ Each event in the `events` array:
   }
 }
 ```
+
+---
+
+## TES Risk Category Reference
+
+The frontend maps TES values to risk categories and display colors:
+
+| TES Range | Risk Category | Display Color |
+|---|---|---|
+| >= 1.0 | Critical | Red |
+| >= 0.7 | High | Orange |
+| >= 0.4 | Moderate | Yellow |
+| < 0.4 | Low | Green |
 
 ---
 

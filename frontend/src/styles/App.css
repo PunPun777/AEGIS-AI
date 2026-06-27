@@ -763,22 +763,59 @@ body {
   font-size: 1.1rem;
 }
 
-.tes--red {
-  color: var(--color-conflict);
+.tes-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tes-category {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.tes--critical .tes-badge,
+.tes--critical .tes-category {
+  color: #ef4444;
+}
+.tes--critical .tes-badge {
   background: rgba(239, 68, 68, 0.1);
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+  border-color: currentColor;
 }
 
-.tes--orange {
-  color: var(--color-protest);
+.tes--high .tes-badge,
+.tes--high .tes-category {
+  color: #f97316;
+}
+.tes--high .tes-badge {
   background: rgba(249, 115, 22, 0.1);
   box-shadow: 0 0 12px rgba(249, 115, 22, 0.2);
+  border-color: currentColor;
 }
 
-.tes--green {
-  color: var(--color-normal);
+.tes--moderate .tes-badge,
+.tes--moderate .tes-category {
+  color: #facc15;
+}
+.tes--moderate .tes-badge {
+  background: rgba(250, 204, 21, 0.1);
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.2);
+  border-color: currentColor;
+}
+
+.tes--low .tes-badge,
+.tes--low .tes-category {
+  color: #22c55e;
+}
+.tes--low .tes-badge {
   background: rgba(34, 197, 94, 0.1);
   box-shadow: 0 0 12px rgba(34, 197, 94, 0.2);
+  border-color: currentColor;
 }
 
 /* ── Trend Section ─────────────────────────────────────────────── */

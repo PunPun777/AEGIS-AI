@@ -32,15 +32,13 @@ pred_index = probabilities.argmax().item()
 confidence = probabilities[0][pred_index].item()
 ```
 
-Confidence is a float in `[0.0, 1.0]`. It is not a heuristic.
-
 ### 3. Signal Confidence
 
 **Source**: `predictor.py` (derived within the same inference pass as classification)
 **Input**: Softmax probability tensor from stage 2
 **Output**: Float in `[0.0, 1.0]`
 
-Confidence is produced as part of the prediction result and propagated through the pipeline. Every event entering downstream stages carries a `confidence` score.
+Confidence is produced as part of the prediction result and propagated through all downstream stages. Every event carries a `confidence` score that is consumed by `tes_service.py`.
 
 ### 4. Event Severity
 
@@ -48,32 +46,17 @@ Confidence is produced as part of the prediction result and propagated through t
 **Input**: Prediction label string, original article text string
 **Output**: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"`
 
-Implements a two-level rule-based severity assignment:
+Rule-based severity assignment:
 
-**Level 1 — Prediction-based defaults:**
+| Prediction | Base Severity | Escalation Condition | Escalated Severity |
+|---|---|---|---|
+| `"normal"` | `"LOW"` | N/A | N/A |
+| `"protest"` | `"MEDIUM"` | N/A | N/A |
+| `"conflict"` | `"HIGH"` | Critical keyword in text | `"CRITICAL"` |
 
-| Prediction | Default Severity |
-|---|---|
-| `"normal"` | `"LOW"` |
-| `"protest"` | `"MEDIUM"` |
-| `"conflict"` | `"HIGH"` (escalated to CRITICAL if keywords match) |
+Critical keywords: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`.
 
-**Level 2 — Keyword escalation for conflict events:**
-
-The headline text is scanned (case-insensitive) against a `frozenset` of critical keywords:
-
-| Keyword | Effect |
-|---|---|
-| `missile` | Escalates to CRITICAL |
-| `airstrike` | Escalates to CRITICAL |
-| `explosion` | Escalates to CRITICAL |
-| `terror` | Escalates to CRITICAL |
-| `invasion` | Escalates to CRITICAL |
-| `war` | Escalates to CRITICAL |
-
-If any keyword is present in the text, severity is `"CRITICAL"`. Otherwise it remains `"HIGH"`.
-
-Severity is produced within the same `predict()` call as classification and confidence. No additional API call or service invocation is required. All three values — `prediction`, `confidence`, `severity` — are returned together in a single dict.
+Severity is propagated through all downstream stages. `tes_service.py` consumes the `severity` key to apply the correct multiplier.
 
 ### 5. Region Extraction
 
@@ -111,22 +94,48 @@ After classification and region extraction, events are grouped into a dictionary
 
 **Service**: `tes_service.py`
 **Input**: List of events for a region
-**Output**: Float score (0.0 – 1.0)
+**Output**: Float score (range `[0.0, 1.5]`)
 
-Computes a weighted average of event predictions:
+Computes the TES as the average of per-event scores. Each event score is the product of three factors:
+
+```
+event_score = prediction_weight × confidence × severity_multiplier
+TES = sum(event_score) / number_of_events
+```
+
+**Prediction weights** (`PREDICTION_WEIGHTS`):
 
 | Prediction | Weight |
 |---|---|
-| conflict | 1.0 |
-| protest | 0.6 |
-| normal | 0.2 |
+| `conflict` | 1.0 |
+| `protest` | 0.6 |
+| `normal` | 0.2 |
 
-Formula: `TES = sum(weight per event) / number of events`
+**Severity multipliers** (`SEVERITY_MULTIPLIERS`):
 
-**Interpretation**:
-- TES > 0.7: High threat (red)
-- TES >= 0.4: Moderate threat (orange)
-- TES < 0.4: Low threat (green)
+| Severity | Multiplier |
+|---|---|
+| `LOW` | 0.8 |
+| `MEDIUM` | 1.0 |
+| `HIGH` | 1.2 |
+| `CRITICAL` | 1.5 |
+
+**Worked examples**:
+
+- Single CRITICAL conflict event, confidence 0.98: `1.0 × 0.98 × 1.5 = 1.47`
+- Single MEDIUM protest event, confidence 0.88: `0.6 × 0.88 × 1.0 = 0.528`
+- Single LOW normal event, confidence 0.83: `0.2 × 0.83 × 0.8 = 0.1328`
+
+Returns a float rounded to four decimal places. Backward compatible: `confidence` falls back to `1.0` and `severity` falls back to `"LOW"` if absent.
+
+**TES risk category thresholds** (used by frontend `TESBadge`):
+
+| TES | Risk Category |
+|---|---|
+| >= 1.0 | Critical |
+| >= 0.7 | High |
+| >= 0.4 | Moderate |
+| < 0.4 | Low |
 
 ### 8. Anomaly Detection
 
@@ -160,7 +169,7 @@ The pipeline produces a JSON object keyed by region:
 ```json
 {
   "Region Name": {
-    "TES": 0.87,
+    "TES": 1.2164,
     "anomaly": true,
     "trend": "increasing",
     "events": [
@@ -194,7 +203,8 @@ fetch_news()
 { region: [{ title, prediction, confidence, severity }] }
     |
     |--- for each region:
-    |       calculate_tes(events)        -> TES
+    |       calculate_tes(events)
+    |           -> sum(weight × confidence × multiplier) / n  -> TES
     |       detect_anomaly(events)       -> anomaly
     |       get_trend(region, TES)       -> trend
     |
@@ -210,6 +220,7 @@ fetch_news()
 - Model inference is the primary bottleneck (CPU-bound, per-article)
 - Softmax adds negligible overhead (tensor operation on already-computed logits)
 - Severity classification adds negligible overhead (frozenset lookup, no I/O)
+- TES weighted calculation is O(n) in the number of events
 - RSS fetch adds network latency on each request
 - No caching of RSS results or model predictions
 - Typical execution: 15 articles processed per request

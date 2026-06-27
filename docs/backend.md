@@ -82,14 +82,6 @@ backend/
 
 Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Calls `get_severity()` with the resolved prediction label and the original text to produce the severity level.
 
-**Confidence Derivation**:
-
-```python
-probabilities = F.softmax(outputs.logits, dim=-1)
-pred_index = probabilities.argmax().item()
-confidence = probabilities[0][pred_index].item()
-```
-
 **Returns**:
 
 ```python
@@ -104,29 +96,46 @@ confidence = probabilities[0][pred_index].item()
 
 **Function**: `get_severity(prediction: str, text: str) -> str`
 
-Implements rule-based severity assignment. Severity is determined by a two-level decision:
+Implements rule-based severity assignment. For `"conflict"` predictions, scans the headline text (case-insensitive) against `CRITICAL_KEYWORDS`: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`. Returns `"CRITICAL"` if any keyword is found, `"HIGH"` otherwise. For all other predictions, defers to `SEVERITY_MAP`: `"protest"` → `"MEDIUM"`, `"normal"` → `"LOW"`.
 
-1. If `prediction` is not `"conflict"`, the severity is looked up from `SEVERITY_MAP`:
+### tes_service.py
 
-| Prediction | Severity |
+**Function**: `calculate_tes(events: list[dict]) -> float`
+
+Computes the Threat Escalation Score as the average of per-event scores, where each event score is:
+
+```
+event_score = prediction_weight × confidence × severity_multiplier
+```
+
+**Prediction weights** (`PREDICTION_WEIGHTS`):
+
+| Prediction | Weight |
 |---|---|
-| `"normal"` | `"LOW"` |
-| `"protest"` | `"MEDIUM"` |
+| `conflict` | 1.0 |
+| `protest` | 0.6 |
+| `normal` | 0.2 |
 
-2. If `prediction` is `"conflict"`, the headline text is scanned (case-insensitive) against the `CRITICAL_KEYWORDS` set:
+**Severity multipliers** (`SEVERITY_MULTIPLIERS`):
 
-| Keyword | Trigger |
+| Severity | Multiplier |
 |---|---|
-| `missile` | CRITICAL |
-| `airstrike` | CRITICAL |
-| `explosion` | CRITICAL |
-| `terror` | CRITICAL |
-| `invasion` | CRITICAL |
-| `war` | CRITICAL |
+| `LOW` | 0.8 |
+| `MEDIUM` | 1.0 |
+| `HIGH` | 1.2 |
+| `CRITICAL` | 1.5 |
 
-If any keyword is found, severity is `"CRITICAL"`. Otherwise severity is `"HIGH"`.
+**Formula**:
 
-`CRITICAL_KEYWORDS` is implemented as a `frozenset` for O(1) membership testing. The function is a pure function with no side effects.
+```
+TES = sum(prediction_weight × confidence × severity_multiplier) / number_of_events
+```
+
+**TES range**: `[0.0, 1.5]`. A single CRITICAL conflict event at confidence 1.0 produces `1.0 × 1.0 × 1.5 = 1.5`. A normal event with LOW severity at confidence 0.5 produces `0.2 × 0.5 × 0.8 = 0.08`.
+
+**Backward compatibility**: `confidence` falls back to `1.0` and `severity` falls back to `"LOW"` (multiplier `1.0`) if those keys are absent from an event dict.
+
+Returns a float rounded to four decimal places. Function signature unchanged: `list[dict] -> float`.
 
 ### news_service.py
 
@@ -140,17 +149,11 @@ Parses the configured RSS feed using feedparser. Returns up to `NEWS_LIMIT` arti
 
 Matches text against keyword lists for four regions: Middle East, South Asia, Europe, USA. Returns the first matching region or "Other" if no match is found. Matching is case-insensitive.
 
-### tes_service.py
-
-**Function**: `calculate_tes(events: list[dict]) -> float`
-
-Computes the Threat Escalation Score as a weighted average of event predictions. Each event dict must contain a `prediction` key. Weights: conflict = 1.0, protest = 0.6, normal = 0.2. Returns a float rounded to two decimal places.
-
 ### anomaly_service.py
 
 **Function**: `detect_anomaly(events: list[dict]) -> bool`
 
-Calculates the ratio of high-severity events (conflict + protest) to total events. Each event dict must contain a `prediction` key. Returns `True` if the ratio exceeds the threshold of 0.6.
+Calculates the ratio of high-severity events (conflict + protest) to total events. Returns `True` if the ratio exceeds the threshold of 0.6.
 
 ### trend_service.py
 
@@ -165,7 +168,7 @@ Maintains an in-memory dictionary of previous TES values per region. Compares cu
 `app/api/routes.py` defines two endpoints:
 
 - `POST /predict`: Single text classification returning prediction, confidence, and severity
-- `GET /news-analysis`: Live news intelligence analysis
+- `GET /news-analysis`: Live news intelligence analysis with weighted TES per region
 
 See [api.md](api.md) for full endpoint documentation.
 
