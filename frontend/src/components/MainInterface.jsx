@@ -4,6 +4,7 @@ import ResultCard from "./ResultCard";
 import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
 import TESBadge from "./TESBadge";
+import ExplanationPanel from "./intelligence/ExplanationPanel";
 import { fetchNewsAnalysis, predictText } from "../services/api";
 
 const MainInterface = () => {
@@ -72,6 +73,7 @@ const MainInterface = () => {
               prediction={predictionResult.prediction} 
               confidence={predictionResult.confidence} 
               severity={predictionResult.severity}
+              explanation={predictionResult.explanation}
             />
           </section>
         )}
@@ -139,6 +141,7 @@ const MainInterface = () => {
                             <SeverityBadge severity={news.severity} />
                             <ConfidenceIndicator confidence={news.confidence} />
                           </div>
+                          <ExplanationPanel explanations={news.explanation} />
                         </div>
                       ))}
                     </div>
