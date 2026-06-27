@@ -19,8 +19,12 @@ frontend/
 │   │   ├── MainInterface.jsx    Primary dashboard: text analysis + live news
 │   │   ├── InputBox.jsx         Text input with validation and loading states
 │   │   ├── ResultCard.jsx       Single-text classification result display
-│   │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage + progress bar
-│   │   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
+│   │   │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage + progress bar
+│   │   │   ├── intelligence/
+│   │   │   │   ├── ExplanationItem.jsx  Individual reasoning bullet
+│   │   │   │   ├── ExplanationList.jsx  Container for reasoning items
+│   │   │   │   └── ExplanationPanel.jsx Collapsible reasoning UI component
+│   │   │   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
 │   │   └── TESBadge.jsx         Reusable TES score display with risk category label
 │   ├── services/
 │   │   └── api.js               Axios HTTP client
@@ -67,7 +71,7 @@ Core interactive component. Contains two columns:
 - `InputBox` for manual text input
 - `ResultCard` for displaying the classification result, severity, and confidence
 - Calls `POST /predict` via `predictText()`
-- State holds the full prediction result object `{ prediction, confidence, severity }`
+- State holds the full prediction result object `{ prediction, confidence, severity, explanation }`
 
 **Right Column — Live News Dashboard:**
 - "Analyze Live News" button that calls `GET /news-analysis` via `fetchNewsAnalysis()`
@@ -79,7 +83,7 @@ Core interactive component. Contains two columns:
 - Anomaly badge: red "Anomaly Detected" or green "Normal Activity"
 - `TESBadge`: displays the weighted TES score and risk category label
 - Trend badge: red "increasing" with up arrow, green "decreasing" with down arrow, neutral "stable" with right arrow
-- Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper
+- Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper, followed by the collapsible `ExplanationPanel`
 
 ### InputBox.jsx
 
@@ -103,7 +107,7 @@ Displays the classification result for a single text input. Accepts `prediction`
 | protest | 🟠 | PROTEST | Civil unrest or protest activity identified |
 | normal | 🟢 | NORMAL | No significant threat indicators detected |
 
-Renders `SeverityBadge` and `ConfidenceIndicator` side-by-side in a `result-card__meta-wrapper` at the card footer.
+Renders `SeverityBadge` and `ConfidenceIndicator` side-by-side in a `result-card__meta-wrapper` at the card footer, followed by the collapsible `ExplanationPanel`.
 
 Props:
 
@@ -112,6 +116,7 @@ Props:
 | `prediction` | `string` | Predicted class label |
 | `confidence` | `float` | Model confidence score (0.0–1.0) |
 | `severity` | `string` | Severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
+| `explanation` | `array` | List of reasoning strings explaining the prediction |
 
 ### ConfidenceIndicator.jsx
 
@@ -176,6 +181,16 @@ Reusable component that displays the Threat Escalation Score alongside a derived
 - Used exclusively in region cards within the live news dashboard
 - Replaces the previous hardcoded inline TES conditional rendering in `MainInterface.jsx`
 
+### ExplanationPanel.jsx (and related)
+
+Found in `components/intelligence/`, these components visualize the reasoning behind the model's prediction.
+
+- **`ExplanationPanel`**: A collapsible container with a smooth CSS Grid height transition. Toggles the visibility of the explanation list.
+- **`ExplanationList`**: Maps an array of reasoning strings into individual items.
+- **`ExplanationItem`**: Renders a single bullet point.
+
+Renders gracefully underneath the meta-wrapper in both `ResultCard` and `MainInterface` live news events. Matches the dark glassmorphism aesthetic.
+
 ---
 
 ## API Client
@@ -189,7 +204,7 @@ Exported functions:
 
 | Function | Method | Endpoint | Response |
 |---|---|---|---|
-| `predictText(text)` | POST | `/predict` | `{ prediction, confidence, severity }` |
+| `predictText(text)` | POST | `/predict` | `{ prediction, confidence, severity, explanation }` |
 | `fetchNewsAnalysis()` | GET | `/news-analysis` | Region-grouped intelligence object |
 
 ---

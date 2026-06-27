@@ -74,6 +74,17 @@
 
 ---
 
+## Phase 5.5 — Completed
+
+- Explainable Intelligence: modular, rule-based reasoning generation explaining model decisions
+- Created `explanation_service.py` to decouple keyword/heuristics logic from model inference
+- Mapped explicit keyword clusters to human-readable explanation strings per prediction class
+- Integrated `explanation: list[str]` into the prediction pipeline and API responses
+- Created reusable React UI components (`ExplanationPanel.jsx`, `ExplanationList.jsx`, `ExplanationItem.jsx`)
+- Upgraded intelligence dashboard to display collapsible reasoning sections per event without layout shift
+
+---
+
 ## Phase 5.3 — Planned
 
 - Interactive geographic visualization (Leaflet.js)

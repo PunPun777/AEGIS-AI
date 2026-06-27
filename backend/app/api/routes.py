@@ -28,6 +28,7 @@ def analyze_news():
             "prediction": result["prediction"],
             "confidence": result["confidence"],
             "severity": result["severity"],
+            "explanation": result["explanation"],
         })
 
     output = {}

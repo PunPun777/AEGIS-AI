@@ -28,7 +28,8 @@ Classify a single text input into a geopolitical event category. Returns the pre
 {
   "prediction": "conflict | protest | normal",
   "confidence": 0.0,
-  "severity": "LOW | MEDIUM | HIGH | CRITICAL"
+  "severity": "LOW | MEDIUM | HIGH | CRITICAL",
+  "explanation": ["reason 1", "reason 2"]
 }
 ```
 
@@ -37,6 +38,7 @@ Classify a single text input into a geopolitical event category. Returns the pre
 | `prediction` | `string` | Predicted class: `"conflict"`, `"protest"`, or `"normal"` |
 | `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
 | `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
+| `explanation` | `array` | List of reasoning strings explaining the prediction |
 
 #### Examples
 
@@ -52,7 +54,12 @@ Response:
 {
   "prediction": "conflict",
   "confidence": 0.9812,
-  "severity": "CRITICAL"
+  "severity": "CRITICAL",
+  "explanation": [
+    "Missile or projectile terminology detected",
+    "Aerial strike language identified",
+    "Border conflict context found"
+  ]
 }
 ```
 
@@ -68,7 +75,10 @@ Response:
 {
   "prediction": "conflict",
   "confidence": 0.9103,
-  "severity": "HIGH"
+  "severity": "HIGH",
+  "explanation": [
+    "Geopolitical conflict indicators present"
+  ]
 }
 ```
 
@@ -84,7 +94,10 @@ Response:
 {
   "prediction": "protest",
   "confidence": 0.9642,
-  "severity": "MEDIUM"
+  "severity": "MEDIUM",
+  "explanation": [
+    "Protest activity language identified"
+  ]
 }
 ```
 
@@ -100,7 +113,11 @@ Response:
 {
   "prediction": "normal",
   "confidence": 0.8834,
-  "severity": "LOW"
+  "severity": "LOW",
+  "explanation": [
+    "Diplomatic agreement language found",
+    "Economic context identified"
+  ]
 }
 ```
 
@@ -137,6 +154,7 @@ Each event in the `events` array:
 | `prediction` | `string` | Classification: `"conflict"`, `"protest"`, or `"normal"` |
 | `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
 | `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
+| `explanation` | `array` | List of reasoning strings explaining the prediction |
 
 #### TES Calculation
 
@@ -165,19 +183,22 @@ TES = average(event_score) over all events in the region
         "title": "Airstrikes reported in northern Syria",
         "prediction": "conflict",
         "confidence": 0.9812,
-        "severity": "CRITICAL"
+        "severity": "CRITICAL",
+        "explanation": ["Aerial strike language identified"]
       },
       {
         "title": "Armed clashes continue near the border",
         "prediction": "conflict",
         "confidence": 0.9103,
-        "severity": "HIGH"
+        "severity": "HIGH",
+        "explanation": ["Border conflict context found"]
       },
       {
         "title": "Iran nuclear talks resume in Vienna",
         "prediction": "normal",
         "confidence": 0.7341,
-        "severity": "LOW"
+        "severity": "LOW",
+        "explanation": ["Diplomatic engagement context detected"]
       }
     ]
   },
@@ -190,13 +211,15 @@ TES = average(event_score) over all events in the region
         "title": "Protests grow outside parliament in Islamabad",
         "prediction": "protest",
         "confidence": 0.8807,
-        "severity": "MEDIUM"
+        "severity": "MEDIUM",
+        "explanation": ["Protest activity language identified", "Political process language identified"]
       },
       {
         "title": "India-Pakistan border tensions ease",
         "prediction": "normal",
         "confidence": 0.8107,
-        "severity": "LOW"
+        "severity": "LOW",
+        "explanation": ["Border conflict context found"]
       }
     ]
   }

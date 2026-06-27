@@ -13,6 +13,8 @@ Signal Confidence (softmax)
     |
 Event Severity (rule-based)
     |
+Explainable Intelligence (modular keyword mapping)
+    |
 Region Extraction (keyword matching)
     |
 TES Calculation (prediction_weight × confidence × severity_multiplier)
@@ -44,6 +46,7 @@ app/
 └── services/
     ├── predictor.py       NLP inference, confidence scoring, severity assignment
     ├── severity_service.py Rule-based event severity classification
+    ├── explanation_service.py Generates human-readable reasoning for predictions
     ├── news_service.py    RSS feed ingestion
     ├── region_service.py  Geographic region extraction
     ├── tes_service.py     Confidence- and severity-weighted TES calculation
@@ -57,7 +60,7 @@ app/
 Defines HTTP endpoints. Orchestrates calls to the services layer. Contains no business logic.
 
 **Services Layer** (`services/`):
-Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` calls `severity_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score.
+Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` calls `severity_service.py` and `explanation_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score.
 
 **ML Layer** (`ml/model_loader.py`):
 Loads the DistilBERT model and tokenizer at startup. Exports module-level `model` and `tokenizer` objects consumed by the predictor service.
@@ -66,7 +69,7 @@ Loads the DistilBERT model and tokenizer at startup. Exports module-level `model
 Stores constants: model path, RSS URL, news limit, label map. All services import configuration from this single source.
 
 **Schema Layer** (`models/schema.py`):
-Defines Pydantic models for request validation and response serialization. Includes `TextInput` (request) and `PredictionResult` (response with `prediction`, `confidence`, and `severity`).
+Defines Pydantic models for request validation and response serialization. Includes `TextInput` (request) and `PredictionResult` (response with `prediction`, `confidence`, `severity`, and `explanation`).
 
 ---
 
@@ -82,6 +85,10 @@ src/
 │   └── Home.jsx             Page shell: header, hero, footer
 ├── components/
 │   ├── MainInterface.jsx    Primary interface: text input + live news dashboard
+│   ├── intelligence/        Explainable Intelligence UI
+│   │   ├── ExplanationPanel.jsx
+│   │   ├── ExplanationList.jsx
+│   │   └── ExplanationItem.jsx
 │   ├── InputBox.jsx         Text input with validation and loading states
 │   ├── ResultCard.jsx       Single-text classification result display
 │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage and progress bar
@@ -104,7 +111,8 @@ App
     │   ├── InputBox
     │   ├── ResultCard
     │   │   ├── SeverityBadge
-    │   │   └── ConfidenceIndicator
+    │   │   ├── ConfidenceIndicator
+    │   │   └── ExplanationPanel
     │   └── Live News Dashboard
     │       └── Region Card (per region)
     │           ├── Anomaly Badge
@@ -112,7 +120,8 @@ App
     │           ├── Trend Badge
     │           └── Event Cards
     │               ├── SeverityBadge
-    │               └── ConfidenceIndicator
+    │               ├── ConfidenceIndicator
+    │               └── ExplanationPanel
     └── Footer (app-footer)
 ```
 
@@ -124,9 +133,9 @@ App
 
 ```
 User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predict()
-    -> DistilBERT inference -> softmax -> get_severity()
-    -> { prediction, confidence, severity }
-    -> ResultCard -> SeverityBadge + ConfidenceIndicator
+    -> DistilBERT inference -> softmax -> get_severity() -> generate_explanation()
+    -> { prediction, confidence, severity, explanation }
+    -> ResultCard -> SeverityBadge + ConfidenceIndicator + ExplanationPanel
 ```
 
 ### Live News Analysis
@@ -134,16 +143,16 @@ User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predic
 ```
 Button Click -> fetchNewsAnalysis() -> GET /news-analysis
     -> fetch_news() [RSS]
-    -> predict() [per article] -> { prediction, confidence, severity }
+    -> predict() [per article] -> { prediction, confidence, severity, explanation }
     -> get_region() [per article]
-    -> group by region -> { region: [{ title, prediction, confidence, severity }] }
+    -> group by region -> { region: [{ title, prediction, confidence, severity, explanation }] }
     -> calculate_tes() [per region]
         -> sum(prediction_weight × confidence × severity_multiplier) / n
     -> detect_anomaly() [per region]
     -> get_trend() [per region]
     -> JSON response -> Region Cards
         -> TESBadge (score + risk category)
-        -> Event Cards -> SeverityBadge + ConfidenceIndicator
+        -> Event Cards -> SeverityBadge + ConfidenceIndicator + ExplanationPanel
 ```
 
 ---

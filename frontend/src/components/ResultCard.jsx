@@ -1,6 +1,7 @@
 import React from "react";
 import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
+import ExplanationPanel from "./intelligence/ExplanationPanel";
 
 /** Maps prediction labels to display metadata */
 const PREDICTION_META = {
@@ -27,7 +28,7 @@ const PREDICTION_META = {
   },
 };
 
-const ResultCard = ({ prediction, confidence, severity }) => {
+const ResultCard = ({ prediction, confidence, severity, explanation }) => {
   const meta = PREDICTION_META[prediction] ?? {
     label: prediction?.toUpperCase() ?? "UNKNOWN",
     icon: "⚪",
@@ -58,6 +59,8 @@ const ResultCard = ({ prediction, confidence, severity }) => {
         <SeverityBadge severity={severity || meta.severity} />
         {confidence !== undefined && <ConfidenceIndicator confidence={confidence} />}
       </div>
+      
+      <ExplanationPanel explanations={explanation} />
     </div>
   );
 };
