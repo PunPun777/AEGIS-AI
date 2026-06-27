@@ -66,11 +66,10 @@
 - New formula: `TES = avg(prediction_weight × confidence × severity_multiplier)`
 - TES range extended from `[0.0, 1.0]` to `[0.0, 1.5]`
 - TES precision increased from 2 decimal places to 4
-- Backward-compatible: `confidence` defaults to `1.0`, `severity` defaults to `"LOW"` if absent
-- `TESBadge` reusable React component displaying score and risk category label
-- Four risk categories derived from TES thresholds: Low (< 0.4), Moderate (0.4–0.69), High (0.7–0.99), Critical (≥ 1.0)
-- Color-coded TES display: green (Low), yellow (Moderate), orange (High), red (Critical)
-- Replaced hardcoded TES inline markup in `MainInterface.jsx` with `TESBadge` component
+- API exposes `tes`, `risk_score`, and `risk_level` natively from the backend
+- Four risk categories defined in backend thresholds: LOW (< 0.31), MODERATE (0.31–0.60), HIGH (0.61–0.90), CRITICAL (≥ 0.91)
+- Replaced legacy `TESBadge` with a rich composite `TESCard` containing `RiskBadge` and `RiskMeter` visual components
+- Fully synchronized repository documentation with API and UI updates
 
 ---
 

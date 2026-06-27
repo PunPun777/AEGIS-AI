@@ -25,7 +25,7 @@ RSS Feed (BBC World)
       |
   Region Extraction (keyword-based)
       |
-  Threat Escalation Score (weighted: prediction × confidence × severity)
+  Weighted TES Calculation
       |
   Anomaly Detection (threshold-based)
       |
@@ -56,8 +56,7 @@ RSS Feed (BBC World)
 
 - React 19 application built with Vite
 - Two-column responsive layout (text analysis + live news dashboard)
-- Region cards with TES indicator showing score and risk category label
-- Color-coded TES risk categories: Low (green), Moderate (yellow), High (orange), Critical (red)
+- Region cards featuring a rich `TESCard` with Threat Escalation Score, Risk Level, and visual Risk Meter
 - Color-coded event classification cards
 - Signal confidence displayed as percentage with color-coded progress bar
 - Event severity displayed as a color-coded badge with severity bar
@@ -117,6 +116,8 @@ Fetch and analyze live news. Returns region-grouped intelligence.
 {
   "South Asia": {
     "TES": 1.1340,
+    "risk_score": 1.1340,
+    "risk_level": "CRITICAL",
     "anomaly": true,
     "trend": "increasing",
     "events": [
@@ -172,12 +173,14 @@ AEGIS-AI/
 │   │   │   ├── intelligence/
 │   │   │   │   ├── ExplanationItem.jsx
 │   │   │   │   ├── ExplanationList.jsx
-│   │   │   │   └── ExplanationPanel.jsx
+│   │   │   │   ├── ExplanationPanel.jsx
+│   │   │   │   ├── RiskBadge.jsx
+│   │   │   │   ├── RiskMeter.jsx
+│   │   │   │   └── TESCard.jsx
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
 │   │   │   ├── ResultCard.jsx
-│   │   │   ├── SeverityBadge.jsx
-│   │   │   └── TESBadge.jsx
+│   │   │   └── SeverityBadge.jsx
 │   │   ├── pages/
 │   │   │   └── Home.jsx
 │   │   ├── services/

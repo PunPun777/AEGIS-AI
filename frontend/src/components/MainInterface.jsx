@@ -3,7 +3,7 @@ import InputBox from "./InputBox";
 import ResultCard from "./ResultCard";
 import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
-import TESBadge from "./TESBadge";
+import TESCard from "./intelligence/TESCard";
 import ExplanationPanel from "./intelligence/ExplanationPanel";
 import { fetchNewsAnalysis, predictText } from "../services/api";
 
@@ -118,7 +118,11 @@ const MainInterface = () => {
                           </div>
                         )}
                         {/* TES Display */}
-                        <TESBadge tesScore={data.TES} />
+                        <TESCard 
+                          tes={data.TES} 
+                          riskLevel={data.risk_level} 
+                          riskScore={data.risk_score} 
+                        />
                         {/* Trend Section */}
                         <div className={`trend-badge trend-badge--${data.trend}`}>
                           <span className="trend-icon">
