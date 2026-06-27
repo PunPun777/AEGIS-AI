@@ -1,4 +1,6 @@
 import React from "react";
+import ConfidenceIndicator from "./ConfidenceIndicator";
+
 
 /** Maps prediction labels to display metadata */
 const PREDICTION_META = {
@@ -25,7 +27,7 @@ const PREDICTION_META = {
   },
 };
 
-const ResultCard = ({ prediction }) => {
+const ResultCard = ({ prediction, confidence }) => {
   const meta = PREDICTION_META[prediction] ?? {
     label: prediction?.toUpperCase() ?? "UNKNOWN",
     icon: "⚪",
@@ -52,10 +54,12 @@ const ResultCard = ({ prediction }) => {
       {/* Description */}
       <p className="result-card__description">{meta.description}</p>
 
-      {/* Confidence bar (decorative UX element) */}
-      <div className="result-card__bar-wrap" aria-hidden="true">
-        <div className="result-card__bar" />
-      </div>
+      {/* Confidence Indicator */}
+      {confidence !== undefined && (
+        <div className="result-card__confidence-wrapper">
+          <ConfidenceIndicator confidence={confidence} />
+        </div>
+      )}
     </div>
   );
 };

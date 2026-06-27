@@ -54,7 +54,7 @@ backend/
 | `MODEL_PATH` | `"model"` | Path to trained model directory |
 | `RSS_URL` | BBC World RSS feed URL | News ingestion source |
 | `NEWS_LIMIT` | `15` | Maximum articles per fetch |
-| `LABEL_MAP` | `{0: "conflict", 1: "normal", 2: "protest"}` | Model output to label mapping |
+| `LABEL_MAP` | `{0: "conflict", 1: "normal", 2: "protest"}` | Model output index to label mapping |
 
 ---
 
@@ -64,11 +64,12 @@ backend/
 
 ---
 
-## Request Schemas
+## Request and Response Schemas
 
 `app/models/schema.py` defines:
 
-- `TextInput`: Pydantic model with a single `text: str` field.
+- `TextInput`: Pydantic model with a single `text: str` field. Used as the request body for `POST /predict`.
+- `PredictionResult`: Pydantic model with `prediction: str` and `confidence: float` fields. Used as the typed response model for `POST /predict`.
 
 ---
 
@@ -76,9 +77,28 @@ backend/
 
 ### predictor.py
 
-**Function**: `predict(text: str) -> str`
+**Function**: `predict(text: str) -> dict`
 
-Tokenizes input text, runs DistilBERT inference (no gradient), applies argmax to logits, and maps the result to a label string using `LABEL_MAP`.
+Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score.
+
+**Confidence Derivation**:
+
+```python
+probabilities = F.softmax(outputs.logits, dim=-1)
+pred_index = probabilities.argmax().item()
+confidence = probabilities[0][pred_index].item()
+```
+
+Confidence is a float in the range `[0.0, 1.0]`, representing the model's normalized probability for the predicted class. It is rounded to four decimal places. Formatting as a percentage is the responsibility of the consuming layer (frontend).
+
+**Returns**:
+
+```python
+{
+    "prediction": "conflict",   # str
+    "confidence": 0.9271        # float, 0.0–1.0
+}
+```
 
 ### news_service.py
 
@@ -96,13 +116,13 @@ Matches text against keyword lists for four regions: Middle East, South Asia, Eu
 
 **Function**: `calculate_tes(events: list[dict]) -> float`
 
-Computes the Threat Escalation Score as a weighted average of event predictions. Weights: conflict = 1.0, protest = 0.6, normal = 0.2. Returns a float rounded to two decimal places.
+Computes the Threat Escalation Score as a weighted average of event predictions. Each event dict must contain a `prediction` key. Weights: conflict = 1.0, protest = 0.6, normal = 0.2. Returns a float rounded to two decimal places.
 
 ### anomaly_service.py
 
 **Function**: `detect_anomaly(events: list[dict]) -> bool`
 
-Calculates the ratio of high-severity events (conflict + protest) to total events. Returns `True` if the ratio exceeds the threshold of 0.6.
+Calculates the ratio of high-severity events (conflict + protest) to total events. Each event dict must contain a `prediction` key. Returns `True` if the ratio exceeds the threshold of 0.6.
 
 ### trend_service.py
 
@@ -116,7 +136,7 @@ Maintains an in-memory dictionary of previous TES values per region. Compares cu
 
 `app/api/routes.py` defines two endpoints:
 
-- `POST /predict`: Single text classification
+- `POST /predict`: Single text classification returning prediction and confidence
 - `GET /news-analysis`: Live news intelligence analysis
 
 See [api.md](api.md) for full endpoint documentation.
@@ -142,9 +162,9 @@ Swagger UI: http://127.0.0.1:8000/docs
 | fastapi | Web framework |
 | uvicorn | ASGI server |
 | transformers | Hugging Face model loading and tokenization |
-| torch | PyTorch inference runtime |
-| feedparser | RSS feed parsing (implicit dependency) |
-| pydantic | Request validation (included with FastAPI) |
+| torch | PyTorch inference runtime and softmax |
+| feedparser | RSS feed parsing |
+| pydantic | Request/response validation (included with FastAPI) |
 
 ---
 

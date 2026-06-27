@@ -12,7 +12,7 @@ http://127.0.0.1:8000
 
 ### POST /predict
 
-Classify a single text input into a geopolitical event category.
+Classify a single text input into a geopolitical event category. Returns the predicted class label and the model's confidence score for that prediction.
 
 #### Request
 
@@ -26,9 +26,15 @@ Classify a single text input into a geopolitical event category.
 
 ```json
 {
-  "prediction": "conflict | protest | normal"
+  "prediction": "conflict | protest | normal",
+  "confidence": 0.0
 }
 ```
+
+| Field | Type | Description |
+|---|---|---|
+| `prediction` | `string` | Predicted class: `"conflict"`, `"protest"`, or `"normal"` |
+| `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
 
 #### Example
 
@@ -42,7 +48,8 @@ Classify a single text input into a geopolitical event category.
 **Response:**
 ```json
 {
-  "prediction": "protest"
+  "prediction": "protest",
+  "confidence": 0.9642
 }
 ```
 
@@ -54,7 +61,7 @@ Classify a single text input into a geopolitical event category.
 
 ### GET /news-analysis
 
-Fetch live news from RSS, classify each article, group by geographic region, and return intelligence output with TES, anomaly status, and trend.
+Fetch live news from RSS, classify each article, derive confidence for each classification, group by geographic region, and return intelligence output with TES, anomaly status, and trend.
 
 #### Request
 
@@ -66,9 +73,9 @@ Returns a JSON object keyed by region name. Each region contains:
 
 | Field | Type | Description |
 |---|---|---|
-| `TES` | `float` | Threat Escalation Score (0.0 - 1.0) |
+| `TES` | `float` | Threat Escalation Score (0.0 – 1.0) |
 | `anomaly` | `boolean` | Whether the region exceeds the anomaly threshold |
-| `trend` | `string` | Temporal trend: "increasing", "decreasing", or "stable" |
+| `trend` | `string` | Temporal trend: `"increasing"`, `"decreasing"`, or `"stable"` |
 | `events` | `array` | List of classified news events |
 
 Each event in the `events` array:
@@ -76,7 +83,8 @@ Each event in the `events` array:
 | Field | Type | Description |
 |---|---|---|
 | `title` | `string` | Article headline |
-| `prediction` | `string` | Classification: "conflict", "protest", or "normal" |
+| `prediction` | `string` | Classification: `"conflict"`, `"protest"`, or `"normal"` |
+| `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
 
 #### Example Response
 
@@ -89,11 +97,13 @@ Each event in the `events` array:
     "events": [
       {
         "title": "Airstrikes reported in northern Syria",
-        "prediction": "conflict"
+        "prediction": "conflict",
+        "confidence": 0.9812
       },
       {
         "title": "Iran nuclear talks resume in Vienna",
-        "prediction": "normal"
+        "prediction": "normal",
+        "confidence": 0.7341
       }
     ]
   },
@@ -104,7 +114,8 @@ Each event in the `events` array:
     "events": [
       {
         "title": "India-Pakistan border tensions ease",
-        "prediction": "normal"
+        "prediction": "normal",
+        "confidence": 0.8107
       }
     ]
   }

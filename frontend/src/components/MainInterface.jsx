@@ -1,11 +1,12 @@
 import { useState } from "react";
 import InputBox from "./InputBox";
 import ResultCard from "./ResultCard";
+import ConfidenceIndicator from "./ConfidenceIndicator";
 import { fetchNewsAnalysis, predictText } from "../services/api";
 
 const MainInterface = () => {
   const [text, setText] = useState("");
-  const [prediction, setPrediction] = useState(null);
+  const [predictionResult, setPredictionResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,12 +31,12 @@ const MainInterface = () => {
     }
 
     setError("");
-    setPrediction(null);
+    setPredictionResult(null);
     setLoading(true);
 
     try {
       const response = await predictText(text.trim());
-      setPrediction(response.data.prediction);
+      setPredictionResult(response.data);
     } catch (err) {
       const msg =
         err?.response?.data?.detail ||
@@ -63,9 +64,12 @@ const MainInterface = () => {
         </section>
 
         {/* Result Section */}
-        {prediction && (
+        {predictionResult && (
           <section className="interface-section" aria-label="Analysis result">
-            <ResultCard prediction={prediction} />
+            <ResultCard 
+              prediction={predictionResult.prediction} 
+              confidence={predictionResult.confidence} 
+            />
           </section>
         )}
       </div>
@@ -132,8 +136,13 @@ const MainInterface = () => {
                     <div className="news-results">
                       {data.events.map((news, index) => (
                         <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
-                          <h4>{news.title}</h4>
-                          <span className="news-card__badge">{news.prediction}</span>
+                          <div className="news-card__header">
+                            <span className="news-card__badge">{news.prediction}</span>
+                          </div>
+                          <h4 className="news-card__title">{news.title}</h4>
+                          <div className="news-card__confidence-wrapper">
+                            <ConfidenceIndicator confidence={news.confidence} />
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -1,6 +1,6 @@
 # Roadmap
 
-## Phase 1 -- Completed
+## Phase 1 — Completed
 
 - DistilBERT model training and fine-tuning
 - FastAPI backend with prediction API
@@ -8,7 +8,7 @@
 
 ---
 
-## Phase 2 -- Completed
+## Phase 2 — Completed
 
 - React frontend (Vite)
 - Axios-based API integration
@@ -17,7 +17,7 @@
 
 ---
 
-## Phase 3 -- Completed
+## Phase 3 — Completed
 
 - RSS-based live news ingestion (BBC World via feedparser)
 - Keyword-based geographic region extraction
@@ -25,7 +25,7 @@
 
 ---
 
-## Phase 4 -- Completed
+## Phase 4 — Completed
 
 - Threat Escalation Score (TES) per region
 - Threshold-based anomaly detection per region
@@ -34,7 +34,19 @@
 
 ---
 
-## Phase 5 -- Planned
+## Phase 5.1 — Completed
+
+- Signal confidence scoring derived from model logits via softmax
+- `POST /predict` response extended with `confidence` float field
+- `GET /news-analysis` events extended with `confidence` float field
+- `PredictionResult` Pydantic response model added to schema layer
+- `ConfidenceIndicator` reusable React component
+- Confidence displayed in `ResultCard` and every live news event card
+- Color-coded confidence bar: green (≥ 90%), yellow (70–89%), red (< 70%)
+
+---
+
+## Phase 5.2 — Planned
 
 - Interactive geographic visualization (Leaflet.js)
 - Map-based region display with risk overlays
@@ -42,7 +54,7 @@
 
 ---
 
-## Phase 6 -- Planned
+## Phase 6 — Planned
 
 - Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)
 - Named Entity Recognition for region and actor extraction
@@ -50,7 +62,7 @@
 
 ---
 
-## Phase 7 -- Planned
+## Phase 7 — Planned
 
 - Model hosting via Hugging Face Hub
 - Containerization (Docker)

@@ -615,10 +615,17 @@ body {
   box-shadow: var(--shadow-card);
 }
 
-.news-card h4 {
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.4;
+.news-card h4, .news-card__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.news-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .news-card__badge {
@@ -681,11 +688,13 @@ body {
 
 .region-header-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .region-indicators {
@@ -810,4 +819,72 @@ body {
   color: var(--color-text-muted);
   background: rgba(74, 85, 113, 0.1);
   box-shadow: 0 0 12px rgba(74, 85, 113, 0.2);
+}
+
+/* ── Confidence Indicator ────────────────────────────────────── */
+.confidence-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.confidence-indicator__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+}
+
+.confidence-indicator__label {
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.8;
+  font-family: "JetBrains Mono", monospace;
+  text-transform: uppercase;
+}
+
+.confidence-indicator__value {
+  font-weight: 700;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.confidence-indicator__bar-bg {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.confidence-indicator__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confidence--green .confidence-indicator__bar-fill {
+  background: #22c55e;
+}
+.confidence--yellow .confidence-indicator__bar-fill {
+  background: #facc15;
+}
+.confidence--red .confidence-indicator__bar-fill {
+  background: #ef4444;
+}
+
+.news-card .confidence-indicator {
+  margin-top: 0;
+}
+
+.news-card__confidence-wrapper {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.result-card__confidence-wrapper {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
