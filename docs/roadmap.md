@@ -27,7 +27,7 @@
 
 ## Phase 4 — Completed
 
-- Threat Escalation Score (TES) per region
+- Threat Escalation Score (TES) per region (simple prediction-weight average)
 - Threshold-based anomaly detection per region
 - In-memory temporal trend analysis per region
 - Live intelligence dashboard with region cards, TES badges, anomaly indicators, and trend display
@@ -56,6 +56,21 @@
 - `SeverityBadge` reusable React component
 - Severity displayed alongside confidence in `ResultCard` and every live news event card
 - Color-coded severity bar: green (LOW), yellow (MEDIUM), orange (HIGH), red (CRITICAL)
+
+---
+
+## Phase 5.4 — Completed
+
+- TES formula upgraded to incorporate prediction weight, signal confidence, and severity multiplier
+- `tes_service.py` updated with `PREDICTION_WEIGHTS` and `SEVERITY_MULTIPLIERS` constants
+- New formula: `TES = avg(prediction_weight × confidence × severity_multiplier)`
+- TES range extended from `[0.0, 1.0]` to `[0.0, 1.5]`
+- TES precision increased from 2 decimal places to 4
+- Backward-compatible: `confidence` defaults to `1.0`, `severity` defaults to `"LOW"` if absent
+- `TESBadge` reusable React component displaying score and risk category label
+- Four risk categories derived from TES thresholds: Low (< 0.4), Moderate (0.4–0.69), High (0.7–0.99), Critical (≥ 1.0)
+- Color-coded TES display: green (Low), yellow (Moderate), orange (High), red (Critical)
+- Replaced hardcoded TES inline markup in `MainInterface.jsx` with `TESBadge` component
 
 ---
 

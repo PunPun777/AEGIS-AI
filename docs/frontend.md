@@ -20,7 +20,8 @@ frontend/
 │   │   ├── InputBox.jsx         Text input with validation and loading states
 │   │   ├── ResultCard.jsx       Single-text classification result display
 │   │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage + progress bar
-│   │   └── SeverityBadge.jsx    Reusable severity level badge with colored bar
+│   │   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
+│   │   └── TESBadge.jsx         Reusable TES score display with risk category label
 │   ├── services/
 │   │   └── api.js               Axios HTTP client
 │   └── styles/
@@ -76,7 +77,7 @@ Core interactive component. Contains two columns:
 **Region Card** (rendered per region):
 - Region title
 - Anomaly badge: red "Anomaly Detected" or green "Normal Activity"
-- TES badge: color-coded (red > 0.7, orange >= 0.4, green < 0.4)
+- `TESBadge`: displays the weighted TES score and risk category label
 - Trend badge: red "increasing" with up arrow, green "decreasing" with down arrow, neutral "stable" with right arrow
 - Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper
 
@@ -102,7 +103,7 @@ Displays the classification result for a single text input. Accepts `prediction`
 | protest | 🟠 | PROTEST | Civil unrest or protest activity identified |
 | normal | 🟢 | NORMAL | No significant threat indicators detected |
 
-Renders `SeverityBadge` and `ConfidenceIndicator` side-by-side in a `result-card__meta-wrapper` at the card footer. The `severity` prop from the API response takes priority; `meta.severity` from the local `PREDICTION_META` map is the fallback when the prop is absent.
+Renders `SeverityBadge` and `ConfidenceIndicator` side-by-side in a `result-card__meta-wrapper` at the card footer.
 
 Props:
 
@@ -110,7 +111,7 @@ Props:
 |---|---|---|
 | `prediction` | `string` | Predicted class label |
 | `confidence` | `float` | Model confidence score (0.0–1.0) |
-| `severity` | `string` | Severity level from API: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
+| `severity` | `string` | Severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 
 ### ConfidenceIndicator.jsx
 
@@ -122,18 +123,13 @@ Reusable component that visualizes model confidence as a labeled percentage and 
 |---|---|---|
 | `confidence` | `float` | Model confidence score in range `[0.0, 1.0]` |
 
-**Behavior:**
-
-- Multiplies `confidence` by 100 and formats to two decimal places (e.g., `0.9642` → `"96.42%"`)
-- Applies a CSS color class based on the confidence value:
+**Color thresholds:**
 
 | Range | Class | Color |
 |---|---|---|
 | >= 0.90 | `confidence--green` | Green (`#22c55e`) |
 | >= 0.70 | `confidence--yellow` | Yellow (`#facc15`) |
 | < 0.70 | `confidence--red` | Red (`#ef4444`) |
-
-- Progress bar width is set via inline style to `${percentage}%`
 
 ### SeverityBadge.jsx
 
@@ -145,11 +141,7 @@ Reusable component that displays the event severity level as a label and a solid
 |---|---|---|
 | `severity` | `string` | Severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 
-**Behavior:**
-
-- Normalizes `severity` to lowercase to derive the CSS modifier class (e.g., `"CRITICAL"` → `severity--critical`)
-- Falls back to `"LOW"` if `severity` is undefined or null
-- Displays the severity label text and a solid colored bar, matching the style structure of `ConfidenceIndicator`:
+**Color mapping:**
 
 | Severity | Class | Color |
 |---|---|---|
@@ -158,8 +150,31 @@ Reusable component that displays the event severity level as a label and a solid
 | `HIGH` | `severity--high` | Orange (`#f97316`) |
 | `CRITICAL` | `severity--critical` | Red (`#ef4444`) |
 
-- Used in both `ResultCard` (manual text analysis) and event cards in the live news dashboard
-- Rendered in a flex meta-wrapper alongside `ConfidenceIndicator`; both components receive `flex: 1` to share space equally
+### TESBadge.jsx
+
+Reusable component that displays the Threat Escalation Score alongside a derived risk category label.
+
+**Props:**
+
+| Prop | Type | Description |
+|---|---|---|
+| `tesScore` | `float` | Weighted TES value in range `[0.0, 1.5]` |
+
+**Behavior:**
+
+- Formats `tesScore` to two decimal places (e.g., `1.2164` → `"1.22"`)
+- Derives `riskCategory` and `colorClass` from threshold comparisons:
+
+| TES Range | Risk Category | Class | Color |
+|---|---|---|---|
+| >= 1.0 | Critical | `tes--critical` | Red (`#ef4444`) |
+| >= 0.7 | High | `tes--high` | Orange (`#f97316`) |
+| >= 0.4 | Moderate | `tes--moderate` | Yellow (`#facc15`) |
+| < 0.4 | Low | `tes--low` | Green (`#22c55e`) |
+
+- Renders a stacked layout: the pill badge (TES label + numeric score) stacked above the risk category text ("Critical Risk", "High Risk", etc.)
+- Used exclusively in region cards within the live news dashboard
+- Replaces the previous hardcoded inline TES conditional rendering in `MainInterface.jsx`
 
 ---
 
@@ -186,7 +201,7 @@ The frontend uses a dark glassmorphism theme defined in `styles/App.css`.
 ### Typography
 
 - Primary: Inter (300–700)
-- Monospace: JetBrains Mono (badges, labels, status text, confidence and severity values)
+- Monospace: JetBrains Mono (badges, labels, status text, numeric values)
 
 ### Color Palette
 
@@ -199,7 +214,7 @@ The frontend uses a dark glassmorphism theme defined in `styles/App.css`.
 | `--color-protest` | `#f97316` | Protest indicators |
 | `--color-normal` | `#22c55e` | Normal / safe indicators |
 
-**Confidence color scale** (independent of prediction color):
+**Confidence color scale:**
 
 | Confidence Range | Color |
 |---|---|
@@ -207,7 +222,7 @@ The frontend uses a dark glassmorphism theme defined in `styles/App.css`.
 | 70–89% | Yellow (`#facc15`) |
 | < 70% | Red (`#ef4444`) |
 
-**Severity color scale**:
+**Severity color scale:**
 
 | Severity | Color |
 |---|---|
@@ -216,11 +231,21 @@ The frontend uses a dark glassmorphism theme defined in `styles/App.css`.
 | HIGH | Orange (`#f97316`) |
 | CRITICAL | Red (`#ef4444`) |
 
+**TES risk category color scale:**
+
+| Risk Category | TES Range | Color |
+|---|---|---|
+| Low | < 0.4 | Green (`#22c55e`) |
+| Moderate | 0.4–0.69 | Yellow (`#facc15`) |
+| High | 0.7–0.99 | Orange (`#f97316`) |
+| Critical | >= 1.0 | Red (`#ef4444`) |
+
 ### Layout
 
 - Responsive two-column layout (side-by-side above 768px, stacked below)
 - Cards use glassmorphism: semi-transparent backgrounds, blur, subtle borders
 - Badges use pill shapes with glow shadows matching their semantic color
+- `TESBadge` uses a column layout: score pill on top, risk category text below, both sharing the same color via CSS descendant selectors on the indicator wrapper class
 - Meta section (severity + confidence) rendered in a flex row at the card footer with a subtle top border separator; each indicator receives equal width via `flex: 1`
 
 ---

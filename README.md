@@ -6,7 +6,7 @@
 
 ## Overview
 
-AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, assigns an event severity level, groups events by geographic region, and produces structured intelligence output with threat scoring, anomaly detection, and trend analysis.
+AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, assigns an event severity level, computes a confidence- and severity-weighted Threat Escalation Score per region, groups events by geographic region, and produces structured intelligence output with anomaly detection and trend analysis.
 
 ---
 
@@ -23,7 +23,7 @@ RSS Feed (BBC World)
       |
   Region Extraction (keyword-based)
       |
-  Threat Escalation Score (TES)
+  Threat Escalation Score (weighted: prediction × confidence × severity)
       |
   Anomaly Detection (threshold-based)
       |
@@ -42,9 +42,9 @@ RSS Feed (BBC World)
 - DistilBERT-based event classification (conflict / protest / normal)
 - Signal confidence scoring derived from model logits via softmax
 - Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL)
+- Confidence- and severity-weighted Threat Escalation Score (TES) per region
 - RSS-based live news ingestion (BBC World)
 - Keyword-based geographic region extraction (Middle East, South Asia, Europe, USA)
-- Threat Escalation Score (TES) calculation per region
 - Threshold-based anomaly detection per region
 - In-memory temporal trend analysis per region
 - CORS-enabled API with Swagger documentation
@@ -53,10 +53,11 @@ RSS Feed (BBC World)
 
 - React 19 application built with Vite
 - Two-column responsive layout (text analysis + live news dashboard)
-- Region cards with TES, anomaly, and trend indicators
+- Region cards with TES indicator showing score and risk category label
+- Color-coded TES risk categories: Low (green), Moderate (yellow), High (orange), Critical (red)
 - Color-coded event classification cards
 - Signal confidence displayed as percentage with color-coded progress bar
-- Event severity displayed as a color-coded badge with a severity bar
+- Event severity displayed as a color-coded badge with severity bar
 - Real-time loading states and error handling
 
 ---
@@ -106,20 +107,22 @@ Fetch and analyze live news. Returns region-grouped intelligence.
 ```json
 {
   "South Asia": {
-    "TES": 0.72,
+    "TES": 1.1340,
     "anomaly": true,
     "trend": "increasing",
     "events": [
       {
-        "title": "...",
+        "title": "Missile strike reported near the capital",
         "prediction": "conflict",
-        "confidence": 0.9271,
-        "severity": "HIGH"
+        "confidence": 0.9812,
+        "severity": "CRITICAL"
       }
     ]
   }
 }
 ```
+
+> TES range is `[0.0, 1.5]`. A single CRITICAL conflict event at full confidence produces `1.0 × 1.0 × 1.5 = 1.5`.
 
 ---
 
@@ -155,7 +158,8 @@ AEGIS-AI/
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
 │   │   │   ├── ResultCard.jsx
-│   │   │   └── SeverityBadge.jsx
+│   │   │   ├── SeverityBadge.jsx
+│   │   │   └── TESBadge.jsx
 │   │   ├── pages/
 │   │   │   └── Home.jsx
 │   │   ├── services/
@@ -212,6 +216,7 @@ Development server: http://localhost:5173
 - Trend analysis uses in-memory storage (resets on server restart)
 - Severity classification is rule-based, not learned
 - Confidence scores are not calibrated
+- TES severity multiplier list is fixed and does not adapt
 - No persistent database
 - No authentication or rate limiting
 
