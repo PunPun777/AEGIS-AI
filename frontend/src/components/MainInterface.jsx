@@ -2,6 +2,7 @@ import { useState } from "react";
 import InputBox from "./InputBox";
 import ResultCard from "./ResultCard";
 import ConfidenceIndicator from "./ConfidenceIndicator";
+import SeverityBadge from "./SeverityBadge";
 import { fetchNewsAnalysis, predictText } from "../services/api";
 
 const MainInterface = () => {
@@ -69,6 +70,7 @@ const MainInterface = () => {
             <ResultCard 
               prediction={predictionResult.prediction} 
               confidence={predictionResult.confidence} 
+              severity={predictionResult.severity}
             />
           </section>
         )}
@@ -140,7 +142,8 @@ const MainInterface = () => {
                             <span className="news-card__badge">{news.prediction}</span>
                           </div>
                           <h4 className="news-card__title">{news.title}</h4>
-                          <div className="news-card__confidence-wrapper">
+                          <div className="news-card__meta-wrapper">
+                            <SeverityBadge severity={news.severity} />
                             <ConfidenceIndicator confidence={news.confidence} />
                           </div>
                         </div>
