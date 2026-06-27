@@ -56,7 +56,7 @@ const ResultCard = ({ prediction, confidence }) => {
 
       {/* Confidence Indicator */}
       {confidence !== undefined && (
-        <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+        <div className="result-card__confidence-wrapper">
           <ConfidenceIndicator confidence={confidence} />
         </div>
       )}

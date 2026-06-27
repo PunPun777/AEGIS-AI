@@ -136,12 +136,13 @@ const MainInterface = () => {
                     <div className="news-results">
                       {data.events.map((news, index) => (
                         <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
-                          <div className="news-card-content" style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "8px" }}>
-                            <h4>{news.title}</h4>
+                          <div className="news-card__header">
                             <span className="news-card__badge">{news.prediction}</span>
                           </div>
-                          {/* Confidence Section */}
-                          <ConfidenceIndicator confidence={news.confidence} />
+                          <h4 className="news-card__title">{news.title}</h4>
+                          <div className="news-card__confidence-wrapper">
+                            <ConfidenceIndicator confidence={news.confidence} />
+                          </div>
                         </div>
                       ))}
                     </div>
