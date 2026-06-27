@@ -8,3 +8,4 @@ class TextInput(BaseModel):
 class PredictionResult(BaseModel):
     prediction: str
     confidence: float
+    severity: str
