@@ -20,11 +20,29 @@ Parses the configured RSS feed using the feedparser library. Extracts article ti
 
 **Service**: `predictor.py`
 **Input**: Single text string
-**Output**: Classification label (`"conflict"`, `"protest"`, or `"normal"`)
+**Output**: `{ "prediction": "conflict | protest | normal", "confidence": float }`
 
-Each article title is individually tokenized and passed through the fine-tuned DistilBERT model. The model outputs logits for three classes; the highest-scoring class is selected via argmax and mapped to a label string.
+Each article title is individually tokenized and passed through the fine-tuned DistilBERT model. The model outputs raw logits for three classes. Softmax is applied over the logits to produce a normalized probability distribution. The class with the highest probability is selected as the prediction; its probability value is extracted as the confidence score.
 
-### 3. Region Extraction
+**Confidence Derivation**:
+
+```python
+probabilities = F.softmax(outputs.logits, dim=-1)
+pred_index = probabilities.argmax().item()
+confidence = probabilities[0][pred_index].item()
+```
+
+Confidence is a float in `[0.0, 1.0]`. It represents the model's certainty for the predicted class relative to all other classes after normalization. It is not a heuristic.
+
+### 3. Signal Confidence
+
+**Source**: `predictor.py` (derived within the same inference pass as classification)
+**Input**: Softmax probability tensor from stage 2
+**Output**: Float in `[0.0, 1.0]`
+
+This stage is not a separate service call. Confidence is produced as part of the prediction result and propagated through the pipeline. Every event entering downstream stages carries both a `prediction` label and a `confidence` score.
+
+### 4. Region Extraction
 
 **Service**: `region_service.py`
 **Input**: Single text string
@@ -41,17 +59,25 @@ Performs case-insensitive keyword matching against predefined keyword lists for 
 
 Returns `"Other"` if no keywords match. First matching region wins.
 
-### 4. Event Grouping
+### 5. Event Grouping
 
 **Location**: `routes.py` (orchestration logic)
 
-After classification and region extraction, events are grouped into a dictionary keyed by region name. Each event stores the article title and its prediction label.
+After classification and region extraction, events are grouped into a dictionary keyed by region name. Each event stores the article title, its prediction label, and its confidence score.
 
-### 5. Threat Escalation Score (TES)
+```python
+{
+    "title": "...",
+    "prediction": "conflict",
+    "confidence": 0.9271
+}
+```
+
+### 6. Threat Escalation Score (TES)
 
 **Service**: `tes_service.py`
 **Input**: List of events for a region
-**Output**: Float score (0.0 - 1.0)
+**Output**: Float score (0.0 – 1.0)
 
 Computes a weighted average of event predictions:
 
@@ -68,7 +94,7 @@ Formula: `TES = sum(weight per event) / number of events`
 - TES >= 0.4: Moderate threat (orange)
 - TES < 0.4: Low threat (green)
 
-### 6. Anomaly Detection
+### 7. Anomaly Detection
 
 **Service**: `anomaly_service.py`
 **Input**: List of events for a region
@@ -76,7 +102,7 @@ Formula: `TES = sum(weight per event) / number of events`
 
 Calculates the ratio of high-severity events (conflict + protest) to total events. If the ratio exceeds 0.6 (60%), the region is flagged as anomalous.
 
-### 7. Trend Analysis
+### 8. Trend Analysis
 
 **Service**: `trend_service.py`
 **Input**: Region name, current TES value
@@ -106,7 +132,8 @@ The pipeline produces a JSON object keyed by region:
     "events": [
       {
         "title": "Article headline text",
-        "prediction": "conflict"
+        "prediction": "conflict",
+        "confidence": 0.9271
       }
     ]
   }
@@ -124,17 +151,17 @@ fetch_news()
 [article_1, article_2, ..., article_N]
     |
     |--- for each article:
-    |       predict(article)  ->  prediction
-    |       get_region(article)  ->  region
-    |       group into: { region: [events] }
+    |       predict(article)     -> { prediction, confidence }
+    |       get_region(article)  -> region
+    |       group into: { region: [{ title, prediction, confidence }] }
     |
     v
-{ region: [events] }
+{ region: [{ title, prediction, confidence }] }
     |
     |--- for each region:
-    |       calculate_tes(events)  ->  TES
-    |       detect_anomaly(events)  ->  anomaly
-    |       get_trend(region, TES)  ->  trend
+    |       calculate_tes(events)        -> TES
+    |       detect_anomaly(events)       -> anomaly
+    |       get_trend(region, TES)       -> trend
     |
     v
 { region: { TES, anomaly, trend, events } }
@@ -146,6 +173,7 @@ fetch_news()
 
 - Pipeline runs synchronously per request
 - Model inference is the primary bottleneck (CPU-bound, per-article)
+- Softmax adds negligible overhead (tensor operation on already-computed logits)
 - RSS fetch adds network latency on each request
 - No caching of RSS results or model predictions
 - Typical execution: 15 articles processed per request

@@ -6,7 +6,7 @@
 
 ## Overview
 
-AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, groups them by geographic region, and produces structured intelligence output with threat scoring, anomaly detection, and trend analysis.
+AEGIS-AI is a predictive intelligence system that identifies early signals of geopolitical instability using AI and open-source data. It ingests live news via RSS, classifies events using a fine-tuned NLP model, derives signal confidence from model logits, groups events by geographic region, and produces structured intelligence output with threat scoring, anomaly detection, and trend analysis.
 
 ---
 
@@ -16,6 +16,8 @@ AEGIS-AI is a predictive intelligence system that identifies early signals of ge
 RSS Feed (BBC World)
       |
   NLP Classification (DistilBERT)
+      |
+  Signal Confidence (softmax)
       |
   Region Extraction (keyword-based)
       |
@@ -36,6 +38,7 @@ RSS Feed (BBC World)
 
 - Modular FastAPI architecture with separated routes, services, and configuration
 - DistilBERT-based event classification (conflict / protest / normal)
+- Signal confidence scoring derived from model logits via softmax
 - RSS-based live news ingestion (BBC World)
 - Keyword-based geographic region extraction (Middle East, South Asia, Europe, USA)
 - Threat Escalation Score (TES) calculation per region
@@ -49,6 +52,7 @@ RSS Feed (BBC World)
 - Two-column responsive layout (text analysis + live news dashboard)
 - Region cards with TES, anomaly, and trend indicators
 - Color-coded event classification cards
+- Signal confidence displayed as percentage with color-coded progress bar
 - Real-time loading states and error handling
 
 ---
@@ -84,7 +88,8 @@ Classify a single text input.
 **Response:**
 ```json
 {
-  "prediction": "protest"
+  "prediction": "protest",
+  "confidence": 0.9642
 }
 ```
 
@@ -102,7 +107,8 @@ Fetch and analyze live news. Returns region-grouped intelligence.
     "events": [
       {
         "title": "...",
-        "prediction": "conflict"
+        "prediction": "conflict",
+        "confidence": 0.9271
       }
     ]
   }
@@ -138,6 +144,7 @@ AEGIS-AI/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── ConfidenceIndicator.jsx
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
 │   │   │   └── ResultCard.jsx
@@ -185,6 +192,7 @@ Development server: http://localhost:5173
 - Architecture: DistilBERT (fine-tuned)
 - Training data: AG News with heuristic relabeling
 - Classes: conflict, protest, normal
+- Confidence: softmax probability of the predicted class
 - Storage: local `backend/model/` directory (Git LFS)
 
 ---

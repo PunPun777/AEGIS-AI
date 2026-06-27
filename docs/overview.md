@@ -54,13 +54,14 @@ It answers:
 The current implementation includes:
 
 - Event classification using a fine-tuned DistilBERT model
+- Signal confidence scoring derived from model logits via softmax
 - Live news ingestion via RSS (BBC World)
 - Geographic region extraction
 - Threat Escalation Score (TES) per region
 - Anomaly detection per region
 - Temporal trend analysis per region
 - FastAPI backend with modular service architecture
-- React frontend with an interactive intelligence dashboard
+- React frontend with an interactive intelligence dashboard including confidence visualization
 
 ---
 

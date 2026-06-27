@@ -9,6 +9,8 @@ RSS Feed (BBC World)
     |
 NLP Classification (DistilBERT)
     |
+Signal Confidence (softmax)
+    |
 Region Extraction (keyword matching)
     |
 TES Calculation (weighted scoring)
@@ -38,7 +40,7 @@ app/
 ├── models/
 │   └── schema.py        Pydantic request/response schemas
 └── services/
-    ├── predictor.py      NLP inference abstraction
+    ├── predictor.py      NLP inference and confidence scoring
     ├── news_service.py   RSS feed ingestion
     ├── region_service.py Geographic region extraction
     ├── tes_service.py    Threat Escalation Score calculation
@@ -61,7 +63,7 @@ Loads the DistilBERT model and tokenizer at startup. Exports module-level `model
 Stores constants: model path, RSS URL, news limit, label map. All services import configuration from this single source.
 
 **Schema Layer** (`models/schema.py`):
-Defines Pydantic models for request validation.
+Defines Pydantic models for request validation and response serialization. Includes `TextInput` (request) and `PredictionResult` (response).
 
 ---
 
@@ -71,18 +73,19 @@ The frontend is a React 19 single-page application built with Vite:
 
 ```
 src/
-├── App.jsx              Router setup (BrowserRouter)
-├── main.jsx             React DOM render entrypoint
+├── App.jsx                  Router setup (BrowserRouter)
+├── main.jsx                 React DOM render entrypoint
 ├── pages/
-│   └── Home.jsx         Page shell: header, hero, footer
+│   └── Home.jsx             Page shell: header, hero, footer
 ├── components/
-│   ├── MainInterface.jsx Primary interface: text input + live news dashboard
-│   ├── InputBox.jsx      Text input with validation and loading states
-│   └── ResultCard.jsx    Single-text classification result display
+│   ├── MainInterface.jsx    Primary interface: text input + live news dashboard
+│   ├── InputBox.jsx         Text input with validation and loading states
+│   ├── ResultCard.jsx       Single-text classification result display
+│   └── ConfidenceIndicator.jsx  Reusable confidence percentage and progress bar
 ├── services/
-│   └── api.js            Axios client (predictText, fetchNewsAnalysis)
+│   └── api.js               Axios client (predictText, fetchNewsAnalysis)
 └── styles/
-    └── App.css           Global design system (dark glassmorphism theme)
+    └── App.css              Global design system (dark glassmorphism theme)
 ```
 
 ### Component Hierarchy
@@ -95,12 +98,14 @@ App
     ├── MainInterface
     │   ├── InputBox
     │   ├── ResultCard
+    │   │   └── ConfidenceIndicator
     │   └── Live News Dashboard
     │       └── Region Card (per region)
     │           ├── Anomaly Badge
     │           ├── TES Badge
     │           ├── Trend Badge
     │           └── Event Cards
+    │               └── ConfidenceIndicator
     └── Footer (app-footer)
 ```
 
@@ -112,7 +117,7 @@ App
 
 ```
 User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predict()
-    -> DistilBERT inference -> label -> ResultCard
+    -> DistilBERT inference -> softmax -> { prediction, confidence } -> ResultCard + ConfidenceIndicator
 ```
 
 ### Live News Analysis
@@ -120,13 +125,13 @@ User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predic
 ```
 Button Click -> fetchNewsAnalysis() -> GET /news-analysis
     -> fetch_news() [RSS]
-    -> predict() [per article]
+    -> predict() [per article] -> { prediction, confidence }
     -> get_region() [per article]
-    -> group by region
+    -> group by region -> { region: [{ title, prediction, confidence }] }
     -> calculate_tes() [per region]
     -> detect_anomaly() [per region]
     -> get_trend() [per region]
-    -> JSON response -> Region Cards
+    -> JSON response -> Region Cards + ConfidenceIndicator per event
 ```
 
 ---

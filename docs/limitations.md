@@ -14,7 +14,7 @@
 - Keyword dependency in classification
 - Weak contextual understanding for nuanced geopolitical language
 - Struggles with edge cases and ambiguous text
-- No confidence score exposed in the API response
+- Confidence scores are not calibrated; softmax probabilities from a heuristically-labeled model tend to skew toward high confidence regardless of true certainty
 
 ---
 
@@ -30,6 +30,7 @@
 ## Intelligence Scoring Limitations
 
 - TES is a simple weighted average, not a calibrated risk metric
+- TES weighting is not adjusted by event confidence; a low-confidence conflict prediction carries the same TES weight as a high-confidence one
 - Anomaly detection uses a fixed threshold (0.6), not adaptive
 - Trend analysis uses in-memory storage that resets on server restart
 - Trend only compares current vs. previous invocation, not a time series
@@ -50,14 +51,16 @@
 
 - High accuracy (~97-99%) likely inflated due to heuristic labeling
 - Not evaluated against real geopolitical ground truth
+- Confidence calibration (temperature scaling) has not been applied
 
 ---
 
 ## Mitigation Plan
 
 - Train on real geopolitical datasets (GDELT, ACLED event data)
+- Apply confidence calibration (temperature scaling, Platt scaling)
+- Incorporate confidence weighting into TES calculation
 - Replace keyword region extraction with NER
 - Implement persistent storage for trend history
 - Add adaptive anomaly thresholds
-- Introduce confidence scoring
 - Add authentication and rate limiting for production deployment
