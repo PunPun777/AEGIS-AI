@@ -17,7 +17,7 @@ Explainable Intelligence (modular keyword mapping)
     |
 Region Extraction (keyword matching)
     |
-TES Calculation (prediction_weight × confidence × severity_multiplier)
+Weighted TES Calculation
     |
 Anomaly Detection (threshold check)
     |
@@ -85,15 +85,17 @@ src/
 │   └── Home.jsx             Page shell: header, hero, footer
 ├── components/
 │   ├── MainInterface.jsx    Primary interface: text input + live news dashboard
-│   ├── intelligence/        Explainable Intelligence UI
+│   ├── intelligence/        Explainable Intelligence & TES UI
 │   │   ├── ExplanationPanel.jsx
 │   │   ├── ExplanationList.jsx
-│   │   └── ExplanationItem.jsx
+│   │   ├── ExplanationItem.jsx
+│   │   ├── RiskBadge.jsx
+│   │   ├── RiskMeter.jsx
+│   │   └── TESCard.jsx
 │   ├── InputBox.jsx         Text input with validation and loading states
 │   ├── ResultCard.jsx       Single-text classification result display
 │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage and progress bar
-│   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
-│   └── TESBadge.jsx         Reusable TES score display with risk category label
+│   └── SeverityBadge.jsx    Reusable severity level badge with colored bar
 ├── services/
 │   └── api.js               Axios client (predictText, fetchNewsAnalysis)
 └── styles/
@@ -116,7 +118,9 @@ App
     │   └── Live News Dashboard
     │       └── Region Card (per region)
     │           ├── Anomaly Badge
-    │           ├── TESBadge
+    │           ├── TESCard
+    │           │   ├── RiskBadge
+    │           │   └── RiskMeter
     │           ├── Trend Badge
     │           └── Event Cards
     │               ├── SeverityBadge
@@ -147,11 +151,11 @@ Button Click -> fetchNewsAnalysis() -> GET /news-analysis
     -> get_region() [per article]
     -> group by region -> { region: [{ title, prediction, confidence, severity, explanation }] }
     -> calculate_tes() [per region]
-        -> sum(prediction_weight × confidence × severity_multiplier) / n
+        -> get_tes_result() -> { tes, risk_score, risk_level }
     -> detect_anomaly() [per region]
     -> get_trend() [per region]
     -> JSON response -> Region Cards
-        -> TESBadge (score + risk category)
+        -> TESCard (score + risk level + risk meter)
         -> Event Cards -> SeverityBadge + ConfidenceIndicator + ExplanationPanel
 ```
 

@@ -110,9 +110,9 @@ Implements rule-based severity assignment. For `"conflict"` predictions, scans t
 
 ### tes_service.py
 
-**Function**: `calculate_tes(events: list[dict]) -> float`
+**Function**: `get_tes_result(events: list[dict]) -> dict`
 
-Computes the Threat Escalation Score as the average of per-event scores, where each event score is:
+Computes the Threat Escalation Score by delegating to a private `_compute_score` helper. Each event score is:
 
 ```
 event_score = prediction_weight × confidence × severity_multiplier
@@ -138,14 +138,21 @@ event_score = prediction_weight × confidence × severity_multiplier
 **Formula**:
 
 ```
-TES = sum(prediction_weight × confidence × severity_multiplier) / number_of_events
+score = sum(prediction_weight × confidence × severity_multiplier) / number_of_events
 ```
 
-**TES range**: `[0.0, 1.5]`. A single CRITICAL conflict event at confidence 1.0 produces `1.0 × 1.0 × 1.5 = 1.5`. A normal event with LOW severity at confidence 0.5 produces `0.2 × 0.5 × 0.8 = 0.08`.
+Returns a dictionary with three fields: `tes` (the float score), `risk_score` (duplicate of `tes` for frontend clarity), and `risk_level` (mapped from `RISK_THRESHOLDS`).
 
-**Backward compatibility**: `confidence` falls back to `1.0` and `severity` falls back to `"LOW"` (multiplier `1.0`) if those keys are absent from an event dict.
+**Risk Thresholds** (`RISK_THRESHOLDS`):
 
-Returns a float rounded to four decimal places. Function signature unchanged: `list[dict] -> float`.
+| Score | Level |
+|---|---|
+| >= 0.91 | `"CRITICAL"` |
+| >= 0.61 | `"HIGH"` |
+| >= 0.31 | `"MODERATE"` |
+| < 0.31 | `"LOW"` |
+
+**Backward compatibility**: The module still exports `calculate_tes(events: list[dict]) -> float`, which directly returns the float score for legacy callers. `confidence` defaults to `1.0` and `severity` to `"LOW"` if missing.
 
 ### news_service.py
 

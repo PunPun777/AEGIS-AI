@@ -105,7 +105,7 @@ After classification, explanation, and region extraction, events are grouped int
 
 **Service**: `tes_service.py`
 **Input**: List of events for a region
-**Output**: Float score (range `[0.0, 1.5]`)
+**Output**: Dictionary containing `{ tes, risk_score, risk_level }`
 
 Computes the TES as the average of per-event scores. Each event score is the product of three factors:
 
@@ -137,16 +137,16 @@ TES = sum(event_score) / number_of_events
 - Single MEDIUM protest event, confidence 0.88: `0.6 × 0.88 × 1.0 = 0.528`
 - Single LOW normal event, confidence 0.83: `0.2 × 0.83 × 0.8 = 0.1328`
 
-Returns a float rounded to four decimal places. Backward compatible: `confidence` falls back to `1.0` and `severity` falls back to `"LOW"` if absent.
+Returns a dictionary with the numeric score and a mapped risk level. Backward compatible: `confidence` falls back to `1.0` and `severity` falls back to `"LOW"` if absent.
 
-**TES risk category thresholds** (used by frontend `TESBadge`):
+**Risk category thresholds** (used by frontend `TESCard`):
 
-| TES | Risk Category |
+| TES | Risk Level |
 |---|---|
-| >= 1.0 | Critical |
-| >= 0.7 | High |
-| >= 0.4 | Moderate |
-| < 0.4 | Low |
+| >= 0.91 | `"CRITICAL"` |
+| >= 0.61 | `"HIGH"` |
+| >= 0.31 | `"MODERATE"` |
+| < 0.31 | `"LOW"` |
 
 ### 9. Anomaly Detection
 
@@ -181,6 +181,8 @@ The pipeline produces a JSON object keyed by region:
 {
   "Region Name": {
     "TES": 1.2164,
+    "risk_score": 1.2164,
+    "risk_level": "CRITICAL",
     "anomaly": true,
     "trend": "increasing",
     "events": [
@@ -218,12 +220,12 @@ fetch_news()
     |
     |--- for each region:
     |       calculate_tes(events)
-    |           -> sum(weight × confidence × multiplier) / n  -> TES
+    |           -> get_tes_result() -> { tes, risk_score, risk_level }
     |       detect_anomaly(events)       -> anomaly
     |       get_trend(region, TES)       -> trend
     |
     v
-{ region: { TES, anomaly, trend, events } }
+{ region: { TES, risk_score, risk_level, anomaly, trend, events } }
 ```
 
 ---

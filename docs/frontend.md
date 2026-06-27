@@ -20,12 +20,14 @@ frontend/
 │   │   ├── InputBox.jsx         Text input with validation and loading states
 │   │   ├── ResultCard.jsx       Single-text classification result display
 │   │   │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage + progress bar
-│   │   │   ├── intelligence/
+│   │   │   ├── intelligence/        Explainable Intelligence & TES UI
 │   │   │   │   ├── ExplanationItem.jsx  Individual reasoning bullet
 │   │   │   │   ├── ExplanationList.jsx  Container for reasoning items
-│   │   │   │   └── ExplanationPanel.jsx Collapsible reasoning UI component
+│   │   │   │   ├── ExplanationPanel.jsx Collapsible reasoning UI component
+│   │   │   │   ├── RiskBadge.jsx        Risk level pill badge
+│   │   │   │   ├── RiskMeter.jsx        Visual risk score fill bar
+│   │   │   │   └── TESCard.jsx          Composite Threat Escalation Score card
 │   │   │   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
-│   │   └── TESBadge.jsx         Reusable TES score display with risk category label
 │   ├── services/
 │   │   └── api.js               Axios HTTP client
 │   └── styles/
@@ -81,7 +83,7 @@ Core interactive component. Contains two columns:
 **Region Card** (rendered per region):
 - Region title
 - Anomaly badge: red "Anomaly Detected" or green "Normal Activity"
-- `TESBadge`: displays the weighted TES score and risk category label
+- `TESCard`: rich composite card displaying the Threat Escalation Score, Risk Level badge, and visual Risk Meter
 - Trend badge: red "increasing" with up arrow, green "decreasing" with down arrow, neutral "stable" with right arrow
 - Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper, followed by the collapsible `ExplanationPanel`
 
@@ -155,31 +157,15 @@ Reusable component that displays the event severity level as a label and a solid
 | `HIGH` | `severity--high` | Orange (`#f97316`) |
 | `CRITICAL` | `severity--critical` | Red (`#ef4444`) |
 
-### TESBadge.jsx
+### TESCard.jsx (and related)
 
-Reusable component that displays the Threat Escalation Score alongside a derived risk category label.
+Found in `components/intelligence/`, these components replace the legacy `TESBadge` with a richer intelligence card visualization.
 
-**Props:**
+- **`TESCard`**: The main composite component displaying the Threat Escalation Score, Risk Level (`RiskBadge`), and visual Risk Meter.
+- **`RiskBadge`**: A pill-shaped badge component that accepts a `level` prop (`LOW`, `MODERATE`, `HIGH`, `CRITICAL`) and applies the appropriate color class dynamically.
+- **`RiskMeter`**: A visual bar component that receives the `score` and `level` props. It calculates a fill percentage relative to the maximum TES value (`1.5`) and animates its width smoothly (`0.6s` cubic-bezier transition).
 
-| Prop | Type | Description |
-|---|---|---|
-| `tesScore` | `float` | Weighted TES value in range `[0.0, 1.5]` |
-
-**Behavior:**
-
-- Formats `tesScore` to two decimal places (e.g., `1.2164` → `"1.22"`)
-- Derives `riskCategory` and `colorClass` from threshold comparisons:
-
-| TES Range | Risk Category | Class | Color |
-|---|---|---|---|
-| >= 1.0 | Critical | `tes--critical` | Red (`#ef4444`) |
-| >= 0.7 | High | `tes--high` | Orange (`#f97316`) |
-| >= 0.4 | Moderate | `tes--moderate` | Yellow (`#facc15`) |
-| < 0.4 | Low | `tes--low` | Green (`#22c55e`) |
-
-- Renders a stacked layout: the pill badge (TES label + numeric score) stacked above the risk category text ("Critical Risk", "High Risk", etc.)
-- Used exclusively in region cards within the live news dashboard
-- Replaces the previous hardcoded inline TES conditional rendering in `MainInterface.jsx`
+Used exclusively in the header section of region cards within the live news dashboard.
 
 ### ExplanationPanel.jsx (and related)
 
@@ -246,21 +232,21 @@ The frontend uses a dark glassmorphism theme defined in `styles/App.css`.
 | HIGH | Orange (`#f97316`) |
 | CRITICAL | Red (`#ef4444`) |
 
-**TES risk category color scale:**
+**Risk Level color scale:**
 
-| Risk Category | TES Range | Color |
+| Risk Level | Score Range | Color |
 |---|---|---|
-| Low | < 0.4 | Green (`#22c55e`) |
-| Moderate | 0.4–0.69 | Yellow (`#facc15`) |
-| High | 0.7–0.99 | Orange (`#f97316`) |
-| Critical | >= 1.0 | Red (`#ef4444`) |
+| LOW | < 0.31 | Green (`#22c55e`) |
+| MODERATE | 0.31–0.60 | Yellow (`#facc15`) |
+| HIGH | 0.61–0.90 | Orange (`#f97316`) |
+| CRITICAL | >= 0.91 | Red (`#ef4444`) |
 
 ### Layout
 
 - Responsive two-column layout (side-by-side above 768px, stacked below)
 - Cards use glassmorphism: semi-transparent backgrounds, blur, subtle borders
 - Badges use pill shapes with glow shadows matching their semantic color
-- `TESBadge` uses a column layout: score pill on top, risk category text below, both sharing the same color via CSS descendant selectors on the indicator wrapper class
+- `TESCard` uses a clean grid/flex layout containing the badge and meter elements, styled with dark glassmorphism.
 - Meta section (severity + confidence) rendered in a flex row at the card footer with a subtle top border separator; each indicator receives equal width via `flex: 1`
 
 ---

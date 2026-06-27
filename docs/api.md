@@ -142,6 +142,8 @@ Returns a JSON object keyed by region name. Each region contains:
 | Field | Type | Description |
 |---|---|---|
 | `TES` | `float` | Confidence- and severity-weighted Threat Escalation Score (range `[0.0, 1.5]`) |
+| `risk_score` | `float` | Duplicate of TES for frontend metric mapping |
+| `risk_level` | `string` | Categorical risk level (`"LOW"`, `"MODERATE"`, `"HIGH"`, `"CRITICAL"`) |
 | `anomaly` | `boolean` | Whether the region exceeds the anomaly threshold |
 | `trend` | `string` | Temporal trend: `"increasing"`, `"decreasing"`, or `"stable"` |
 | `events` | `array` | List of classified news events |
@@ -176,6 +178,8 @@ TES = average(event_score) over all events in the region
 {
   "Middle East": {
     "TES": 1.2164,
+    "risk_score": 1.2164,
+    "risk_level": "CRITICAL",
     "anomaly": true,
     "trend": "increasing",
     "events": [
@@ -204,6 +208,8 @@ TES = average(event_score) over all events in the region
   },
   "South Asia": {
     "TES": 0.5285,
+    "risk_score": 0.5285,
+    "risk_level": "MODERATE",
     "anomaly": false,
     "trend": "stable",
     "events": [
@@ -228,16 +234,16 @@ TES = average(event_score) over all events in the region
 
 ---
 
-## TES Risk Category Reference
+## Risk Level Reference
 
-The frontend maps TES values to risk categories and display colors:
+The backend computes the categorical `risk_level` from the numeric TES value using these thresholds:
 
-| TES Range | Risk Category | Display Color |
+| TES Range | Risk Level | Frontend Color |
 |---|---|---|
-| >= 1.0 | Critical | Red |
-| >= 0.7 | High | Orange |
-| >= 0.4 | Moderate | Yellow |
-| < 0.4 | Low | Green |
+| >= 0.91 | `"CRITICAL"` | Red |
+| >= 0.61 | `"HIGH"` | Orange |
+| >= 0.31 | `"MODERATE"` | Yellow |
+| < 0.31 | `"LOW"` | Green |
 
 ---
 
