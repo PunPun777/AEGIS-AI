@@ -19,13 +19,18 @@ def predict(text: str) -> dict:
     ml_prediction = LABEL_MAP[pred_index]
 
     decision = decide(text, ml_prediction, ml_confidence)
+    expl = decision.explanation
 
     return {
         "prediction":          decision.prediction,
         "confidence":          round(decision.confidence, 4),
         "severity":            get_severity(decision.prediction, text),
-        "explanation":         generate_explanation(text, decision.prediction),
+        "explanation":         generate_explanation(text, decision.prediction, expl),
         "original_prediction": decision.original_prediction,
         "overridden":          decision.overridden,
         "override_reason":     decision.override_reason,
+        "matched_categories":  expl.matched_categories,
+        "matched_keywords":    expl.matched_keywords,
+        "keyword_score":       expl.keyword_score,
+        "override_score":      expl.override_score,
     }

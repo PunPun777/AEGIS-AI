@@ -37,6 +37,7 @@ from app.core.domain_knowledge import (
     PROTEST_KEYWORDS,
 )
 from app.core.keyword_matcher import match_phrases, score_categories
+from app.services.decision_explainer import DecisionExplanation, build as build_explanation
 
 
 # ── Category maps ─────────────────────────────────────────────────────────────
@@ -78,30 +79,30 @@ class HybridDecision:
     confidence: float
     overridden: bool
     override_reason: str
+    explanation: DecisionExplanation
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
-def _weighted_conflict_score(text: str) -> tuple[float, int]:
+def _weighted_conflict_score(text: str) -> tuple[float, int, list[str]]:
     raw_scores = score_categories(text, _CONFLICT_CATEGORY_MAP)
     active_cats = {cat: sc for cat, sc in raw_scores.items() if sc > 0}
     indicator_count = len(active_cats)
     if not active_cats:
-        return 0.0, 0
-    # Peak category score weighted by its importance
+        return 0.0, 0, []
     peak_cat = max(active_cats, key=lambda c: active_cats[c] * HDE_CATEGORY_WEIGHTS.get(c, 1.0))
     peak = active_cats[peak_cat] * HDE_CATEGORY_WEIGHTS.get(peak_cat, 1.0)
-    # Multi-category boost: each extra active category adds 0.06 (capped at 0.30)
     boost = min(0.30, (indicator_count - 1) * 0.06)
     score = round(min(1.0, peak + boost), 4)
-    return score, indicator_count
+    return score, indicator_count, list(active_cats.keys())
 
 
-def _weighted_protest_score(text: str) -> tuple[float, int]:
+def _weighted_protest_score(text: str) -> tuple[float, int, list[str]]:
     raw_scores = score_categories(text, _PROTEST_CATEGORY_MAP)
     score = round(min(1.0, raw_scores.get("protest", 0.0)), 4)
     indicator_count = int(raw_scores.get("protest", 0.0) * HDE_SCORE_CAP)
-    return score, indicator_count
+    keywords = match_phrases(text, PROTEST_KEYWORDS)
+    return score, indicator_count, keywords
 
 
 def _peace_dampening_score(text: str) -> float:
@@ -128,18 +129,22 @@ def decide(
     ml_prediction: str,
     ml_confidence: float,
 ) -> HybridDecision:
-    # ML is highly confident → always trust it
     if ml_confidence >= HDE_ML_TRUST_THRESHOLD:
+        expl = build_explanation(
+            text, ml_prediction, ml_confidence,
+            outcome="ml_trusted",
+        )
         return HybridDecision(
             prediction=ml_prediction,
             original_prediction=ml_prediction,
             confidence=ml_confidence,
             overridden=False,
-            override_reason="",
+            override_reason=expl.decision_reason,
+            explanation=expl,
         )
 
-    conflict_score, conflict_indicators = _weighted_conflict_score(text)
-    protest_score, protest_indicators = _weighted_protest_score(text)
+    conflict_score, conflict_indicators, conflict_cats = _weighted_conflict_score(text)
+    protest_score, protest_indicators, protest_kws = _weighted_protest_score(text)
     peace_score = _peace_dampening_score(text)
     min_ind = _min_indicators(ml_confidence)
 
@@ -154,18 +159,41 @@ def decide(
             and peace_score >= HDE_DIPLOMACY_DAMPENING_SCORE
             and conflict_score < HDE_CONFLICT_OVERRIDE_SCORE + 0.15
         )
+
         if conflict_strong_enough and not peace_dampened:
-            reason = (
-                f"Conflict score {conflict_score:.3f} with {conflict_indicators} "
-                f"indicator(s) overrides ML '{ml_prediction}' "
-                f"(confidence {ml_confidence:.3f})"
+            expl = build_explanation(
+                text, ml_prediction, ml_confidence,
+                outcome="conflict_override",
+                conflict_score=conflict_score,
+                conflict_categories=conflict_cats,
+                conflict_indicators=conflict_indicators,
+                conflict_category_map=_CONFLICT_CATEGORY_MAP,
             )
             return HybridDecision(
                 prediction="conflict",
                 original_prediction=ml_prediction,
                 confidence=ml_confidence,
                 overridden=True,
-                override_reason=reason,
+                override_reason=expl.decision_reason,
+                explanation=expl,
+            )
+
+        if conflict_strong_enough and peace_dampened:
+            expl = build_explanation(
+                text, ml_prediction, ml_confidence,
+                outcome="peace_dampened",
+                conflict_score=conflict_score,
+                conflict_categories=conflict_cats,
+                peace_score=peace_score,
+                conflict_category_map=_CONFLICT_CATEGORY_MAP,
+            )
+            return HybridDecision(
+                prediction=ml_prediction,
+                original_prediction=ml_prediction,
+                confidence=ml_confidence,
+                overridden=False,
+                override_reason=expl.decision_reason,
+                explanation=expl,
             )
 
     # ── Protest override check ────────────────────────────────────────────────
@@ -175,23 +203,33 @@ def decide(
             and protest_indicators >= min_ind
         )
         if protest_strong_enough:
-            reason = (
-                f"Protest score {protest_score:.3f} with {protest_indicators} "
-                f"indicator(s) overrides ML 'normal' "
-                f"(confidence {ml_confidence:.3f})"
+            expl = build_explanation(
+                text, ml_prediction, ml_confidence,
+                outcome="protest_override",
+                protest_score=protest_score,
+                protest_keywords=protest_kws,
+                protest_indicators=protest_indicators,
             )
             return HybridDecision(
                 prediction="protest",
                 original_prediction=ml_prediction,
                 confidence=ml_confidence,
                 overridden=True,
-                override_reason=reason,
+                override_reason=expl.decision_reason,
+                explanation=expl,
             )
 
+    expl = build_explanation(
+        text, ml_prediction, ml_confidence,
+        outcome="kept",
+        conflict_score=conflict_score,
+        conflict_categories=conflict_cats,
+    )
     return HybridDecision(
         prediction=ml_prediction,
         original_prediction=ml_prediction,
         confidence=ml_confidence,
         overridden=False,
-        override_reason="",
+        override_reason=expl.decision_reason,
+        explanation=expl,
     )
