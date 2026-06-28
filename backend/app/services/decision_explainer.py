@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.core.config import (
-    HDE_ML_TRUST_THRESHOLD,
-    HDE_CONFLICT_OVERRIDE_SCORE,
-    HDE_PROTEST_OVERRIDE_SCORE,
+    HDE_CONFLICT_DOMAIN_FLOOR,
+    HDE_PROTEST_DOMAIN_FLOOR,
     HDE_DIPLOMACY_DAMPENING_SCORE,
     HDE_CATEGORY_WEIGHTS,
 )
@@ -60,7 +59,7 @@ class DecisionExplanation:
 def _strength_label(score: float) -> str:
     if score >= 0.65:
         return "high"
-    if score >= 0.35:
+    if score >= 0.30:
         return "medium"
     return "low"
 
@@ -80,19 +79,11 @@ def _format_keywords(keywords: list[str], limit: int = 5) -> list[str]:
 
 # ── Per-path reason builders ──────────────────────────────────────────────────
 
-def _ml_trusted_reason(ml_prediction: str, ml_confidence: float) -> str:
-    pct = round(ml_confidence * 100, 1)
-    return (
-        f"Prediction retained because ML confidence ({pct}%) exceeded the "
-        f"override threshold ({round(HDE_ML_TRUST_THRESHOLD * 100)}%). "
-        f"Domain signals were not evaluated."
-    )
-
-
 def _conflict_override_reason(
     categories: list[str],
     keywords: list[str],
     conflict_score: float,
+    ml_score: float,
     indicator_count: int,
     ml_prediction: str,
     ml_confidence: float,
@@ -103,9 +94,9 @@ def _conflict_override_reason(
     pct = round(ml_confidence * 100, 1)
     return (
         f"{strength} {cat_phrase} terminology detected "
-        f"({indicator_count} active indicator group(s), score {conflict_score:.3f}). "
-        f"Multiple conflict indicators outweighed the ML prediction of "
-        f"'{ml_prediction}' (confidence {pct}%). "
+        f"({indicator_count} active indicator group(s), domain score {conflict_score:.3f}). "
+        f"Domain evidence outweighed ML prediction of '{ml_prediction}' "
+        f"(ML score {ml_score:.3f}, confidence {pct}%). "
         f"Matched signals: {kw_sample}."
     )
 
@@ -113,10 +104,12 @@ def _conflict_override_reason(
 def _peace_dampened_reason(
     conflict_score: float,
     peace_score: float,
+    ml_score: float,
     ml_prediction: str,
 ) -> str:
     return (
-        f"Conflict signals detected (score {conflict_score:.3f}) but suppressed by "
+        f"Conflict domain signals detected (score {conflict_score:.3f}, "
+        f"ML score {ml_score:.3f}) but suppressed by "
         f"strong diplomatic or peace indicators (peace score {peace_score:.3f}). "
         f"ML prediction '{ml_prediction}' retained to avoid false escalation."
     )
@@ -125,7 +118,9 @@ def _peace_dampened_reason(
 def _protest_override_reason(
     keywords: list[str],
     protest_score: float,
+    ml_score: float,
     indicator_count: int,
+    ml_prediction: str,
     ml_confidence: float,
 ) -> str:
     strength = _STRENGTH_LABELS[_strength_label(protest_score)]
@@ -133,30 +128,38 @@ def _protest_override_reason(
     pct = round(ml_confidence * 100, 1)
     return (
         f"{strength} civil unrest and protest terminology detected "
-        f"({indicator_count} indicator(s), score {protest_score:.3f}). "
-        f"ML prediction 'normal' (confidence {pct}%) overridden to 'protest'. "
+        f"({indicator_count} indicator(s), domain score {protest_score:.3f}). "
+        f"Domain evidence outweighed ML prediction of '{ml_prediction}' "
+        f"(ML score {ml_score:.3f}, confidence {pct}%). "
         f"Matched signals: {kw_sample}."
     )
 
 
-def _prediction_kept_reason(
+def _ml_retained_reason(
     ml_prediction: str,
     ml_confidence: float,
+    ml_score: float,
     conflict_score: float,
-    peace_dampened: bool,
+    peace_score: float,
 ) -> str:
     pct = round(ml_confidence * 100, 1)
-    if peace_dampened:
-        return _peace_dampened_reason(conflict_score, 0.0, ml_prediction)
-    if conflict_score > 0:
+    if conflict_score > 0 and conflict_score <= ml_score:
         return (
-            f"Conflict signals present (score {conflict_score:.3f}) but below the "
-            f"override threshold ({HDE_CONFLICT_OVERRIDE_SCORE:.2f}). "
-            f"ML prediction '{ml_prediction}' (confidence {pct}%) retained."
+            f"ML prediction '{ml_prediction}' retained (confidence {pct}%, "
+            f"ML score {ml_score:.3f}). "
+            f"Conflict domain signals present (score {conflict_score:.3f}) "
+            f"but insufficient to outweigh ML evidence."
+        )
+    if peace_score >= HDE_DIPLOMACY_DAMPENING_SCORE:
+        return (
+            f"ML prediction '{ml_prediction}' retained (confidence {pct}%, "
+            f"ML score {ml_score:.3f}). "
+            f"Strong diplomatic or peace signals detected (score {peace_score:.3f}) "
+            f"with no conflicting domain indicators above threshold."
         )
     return (
-        f"No significant domain signals detected. "
-        f"ML prediction '{ml_prediction}' (confidence {pct}%) accepted as-is."
+        f"No domain signals sufficient to challenge ML prediction "
+        f"'{ml_prediction}' (confidence {pct}%, ML score {ml_score:.3f})."
     )
 
 
@@ -167,6 +170,7 @@ def build(
     ml_prediction: str,
     ml_confidence: float,
     outcome: str,
+    ml_score: float = 0.0,
     conflict_score: float = 0.0,
     conflict_categories: list[str] | None = None,
     protest_score: float = 0.0,
@@ -180,21 +184,12 @@ def build(
     conflict_categories = conflict_categories or []
     protest_keywords = protest_keywords or []
 
-    if outcome == "ml_trusted":
-        return DecisionExplanation(
-            decision_reason=_ml_trusted_reason(ml_prediction, ml_confidence),
-            matched_categories=[],
-            matched_keywords=[],
-            keyword_score=0.0,
-            override_score=0.0,
-        )
-
     if outcome == "conflict_override":
         vocab = frozenset().union(*(v for v in (conflict_category_map or {}).values()))
         keywords = match_phrases(text, vocab)
         return DecisionExplanation(
             decision_reason=_conflict_override_reason(
-                conflict_categories, keywords, conflict_score,
+                conflict_categories, keywords, conflict_score, ml_score,
                 conflict_indicators, ml_prediction, ml_confidence,
             ),
             matched_categories=conflict_categories,
@@ -207,7 +202,9 @@ def build(
         vocab = frozenset().union(*(v for v in (conflict_category_map or {}).values()))
         keywords = match_phrases(text, vocab)
         return DecisionExplanation(
-            decision_reason=_peace_dampened_reason(conflict_score, peace_score, ml_prediction),
+            decision_reason=_peace_dampened_reason(
+                conflict_score, peace_score, ml_score, ml_prediction,
+            ),
             matched_categories=conflict_categories,
             matched_keywords=_format_keywords(keywords),
             keyword_score=conflict_score,
@@ -218,7 +215,8 @@ def build(
     if outcome == "protest_override":
         return DecisionExplanation(
             decision_reason=_protest_override_reason(
-                protest_keywords, protest_score, protest_indicators, ml_confidence,
+                protest_keywords, protest_score, ml_score,
+                protest_indicators, ml_prediction, ml_confidence,
             ),
             matched_categories=["protest"],
             matched_keywords=_format_keywords(protest_keywords),
@@ -226,10 +224,9 @@ def build(
             override_score=protest_score,
         )
 
-    # outcome == "kept"
     return DecisionExplanation(
-        decision_reason=_prediction_kept_reason(
-            ml_prediction, ml_confidence, conflict_score, peace_dampened,
+        decision_reason=_ml_retained_reason(
+            ml_prediction, ml_confidence, ml_score, conflict_score, peace_score,
         ),
         matched_categories=conflict_categories,
         matched_keywords=[],
