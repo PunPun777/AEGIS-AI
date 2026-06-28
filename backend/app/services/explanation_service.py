@@ -1,52 +1,44 @@
-KEYWORD_GROUPS: dict[str, list[tuple[set[str], str]]] = {
-    "conflict": [
-        ({"missile", "rocket", "ballistic", "projectile"}, "Missile or projectile terminology detected"),
-        ({"airstrike", "strike", "bombardment", "bombing"}, "Aerial strike language identified"),
-        ({"explosion", "blast", "detonation", "bomb"}, "Explosive event language detected"),
-        ({"war", "warfare", "warzone", "combat"}, "Active warfare context found"),
-        ({"invasion", "incursion", "occupation", "siege"}, "Territorial invasion language identified"),
-        ({"terror", "terrorist", "terrorism", "extremist"}, "Terrorism-related language detected"),
-        ({"military", "troops", "soldiers", "armed forces", "battalion"}, "Military presence terminology detected"),
-        ({"attack", "assault", "offensive"}, "Attack-related language identified"),
-        ({"border", "frontier", "crossing", "checkpoint"}, "Border conflict context found"),
-        ({"shelling", "artillery", "mortar", "gunfire"}, "Heavy weapons terminology detected"),
-        ({"casualties", "fatalities", "deaths", "wounded", "killed"}, "Casualty language present"),
-    ],
-    "protest": [
-        ({"protest", "protests", "protester"}, "Protest activity language identified"),
-        ({"demonstration", "demonstrators"}, "Public demonstration context found"),
-        ({"march", "marchers", "marching"}, "Organized march activity detected"),
-        ({"rally", "rallying", "mobilization"}, "Rally or mobilization language identified"),
-        ({"strike", "walkout", "stoppage"}, "Industrial or civil action language detected"),
-        ({"sit-in", "blockade", "occupation"}, "Non-violent resistance terminology found"),
-        ({"activists", "activist", "campaigners"}, "Activist group language detected"),
-        ({"unrest", "clashes", "tension", "friction"}, "Civil unrest indicators present"),
-        ({"demands", "petition", "grievance"}, "Grievance and demand language identified"),
-    ],
-    "normal": [
-        ({"agreement", "treaty", "accord", "deal"}, "Diplomatic agreement language found"),
-        ({"meeting", "summit", "conference", "talks"}, "Diplomatic engagement context detected"),
-        ({"economic", "economy", "trade", "commerce"}, "Economic context identified"),
-        ({"growth", "development", "expansion"}, "Positive development language present"),
-        ({"festival", "celebration", "cultural"}, "Cultural event language detected"),
-        ({"education", "school", "university"}, "Education sector context found"),
-        ({"cooperation", "collaboration", "partnership"}, "Cooperative language identified"),
-        ({"health", "medical", "healthcare"}, "Health sector context detected"),
-        ({"aid", "relief", "humanitarian"}, "Humanitarian context language found"),
-        ({"election", "vote", "parliament", "congress"}, "Political process language identified"),
-    ],
+"""
+explanation_service.py
+----------------------
+Generates human-readable intelligence explanations for model predictions.
+
+All vocabulary and explanation groups are imported from the centralised
+app.core.domain_knowledge module; no keyword lists are defined here.
+
+Logic
+-----
+For each prediction class (conflict / protest / normal), the service
+iterates over the corresponding EXPLANATION_GROUPS.  Each group is a
+tuple of (frozenset[str], analyst_sentence).  If any term in the
+frozenset appears in the lowercase text, the analyst sentence is
+appended to the output list.
+
+If no groups match, a generic fallback sentence is returned.
+"""
+
+from app.core.domain_knowledge import (
+    CONFLICT_EXPLANATION_GROUPS,
+    PROTEST_EXPLANATION_GROUPS,
+    NORMAL_EXPLANATION_GROUPS,
+)
+
+_EXPLANATION_GROUPS: dict[str, list[tuple[frozenset[str], str]]] = {
+    "conflict": CONFLICT_EXPLANATION_GROUPS,
+    "protest":  PROTEST_EXPLANATION_GROUPS,
+    "normal":   NORMAL_EXPLANATION_GROUPS,
 }
 
 _FALLBACK_EXPLANATIONS: dict[str, str] = {
     "conflict": "Geopolitical conflict indicators present",
-    "protest": "Civil unrest indicators present",
-    "normal": "No significant threat indicators detected",
+    "protest":  "Civil unrest indicators present",
+    "normal":   "No significant threat indicators detected",
 }
 
 
 def generate_explanation(text: str, prediction: str) -> list[str]:
     lower = text.lower()
-    groups = KEYWORD_GROUPS.get(prediction, [])
+    groups = _EXPLANATION_GROUPS.get(prediction, [])
     explanations = [
         sentence
         for keywords, sentence in groups
