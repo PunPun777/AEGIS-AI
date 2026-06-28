@@ -4,15 +4,13 @@ explanation_service.py
 Generates human-readable intelligence explanations for model predictions.
 
 All vocabulary and explanation groups are imported from the centralised
-app.core.domain_knowledge module; no keyword lists are defined here.
+app.core.domain_knowledge module.
 
-Logic
------
-For each prediction class (conflict / protest / normal), the service
-iterates over the corresponding EXPLANATION_GROUPS.  Each group is a
-tuple of (frozenset[str], analyst_sentence).  If any term in the
-frozenset appears in the lowercase text, the analyst sentence is
-appended to the output list.
+Matching is performed by app.core.keyword_matcher, which applies:
+- Longest-phrase priority   ("missile barrage" before "missile")
+- Multi-word phrase support ("exchange of fire", "armed confrontation")
+- Covered-span deduplication (shorter sub-phrases in the same span are
+  not reported as additional independent matches)
 
 If no groups match, a generic fallback sentence is returned.
 """
@@ -22,6 +20,7 @@ from app.core.domain_knowledge import (
     PROTEST_EXPLANATION_GROUPS,
     NORMAL_EXPLANATION_GROUPS,
 )
+from app.core.keyword_matcher import match_explanation_groups
 
 _EXPLANATION_GROUPS: dict[str, list[tuple[frozenset[str], str]]] = {
     "conflict": CONFLICT_EXPLANATION_GROUPS,
@@ -37,13 +36,8 @@ _FALLBACK_EXPLANATIONS: dict[str, str] = {
 
 
 def generate_explanation(text: str, prediction: str) -> list[str]:
-    lower = text.lower()
     groups = _EXPLANATION_GROUPS.get(prediction, [])
-    explanations = [
-        sentence
-        for keywords, sentence in groups
-        if any(kw in lower for kw in keywords)
-    ]
-    if not explanations:
-        explanations = [_FALLBACK_EXPLANATIONS.get(prediction, "Classification based on model output")]
-    return explanations
+    sentences = match_explanation_groups(text, groups)
+    if not sentences:
+        sentences = [_FALLBACK_EXPLANATIONS.get(prediction, "Classification based on model output")]
+    return sentences
