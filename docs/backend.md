@@ -29,6 +29,7 @@ backend/
 │       ├── __init__.py
 │       ├── anomaly_service.py
 │       ├── explanation_service.py
+│       ├── map_service.py
 │       ├── news_service.py
 │       ├── predictor.py
 │       ├── region_service.py
@@ -72,6 +73,7 @@ backend/
 
 - `TextInput`: Pydantic model with a single `text: str` field. Used as the request body for `POST /predict`.
 - `PredictionResult`: Pydantic model with `prediction: str`, `confidence: float`, `severity: str`, and `explanation: list[str]` fields. Used as the typed response model for `POST /predict`.
+- `IntelligenceMapResponse`: Response model for the `/intelligence-map` endpoint. Contains a list of `RegionMapEntry` objects, each holding aggregated metrics (`tes`, `risk_level`, `severity_distribution`, etc.) for geographic display.
 
 ---
 
@@ -178,14 +180,21 @@ Calculates the ratio of high-severity events (conflict + protest) to total event
 
 Maintains an in-memory dictionary of previous TES values per region. Compares current TES to previous TES and returns "increasing", "decreasing", or "stable". Returns "stable" on first invocation for a region. State resets when the server restarts.
 
+### map_service.py
+
+**Function**: `build_intelligence_map() -> list[dict]`
+
+Delegates to `fetch_news()`, classifies all articles, and groups them by region. Uses `tes_service`, `anomaly_service`, and `trend_service` to compute high-level metrics for each region. Strips out raw event lists and constructs a lightweight, aggregated array of geographic data optimized for frontend map visualization. Returns a list sorted by risk score descending.
+
 ---
 
 ## API Routes
 
-`app/api/routes.py` defines two endpoints:
+`app/api/routes.py` defines three endpoints:
 
 - `POST /predict`: Single text classification returning prediction, confidence, and severity
 - `GET /news-analysis`: Live news intelligence analysis with weighted TES per region
+- `GET /intelligence-map`: Aggregated regional intelligence optimized for geographic visualization
 
 See [api.md](api.md) for full endpoint documentation.
 

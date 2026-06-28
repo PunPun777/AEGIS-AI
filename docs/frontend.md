@@ -27,11 +27,17 @@ frontend/
 │   │   │   │   ├── RiskBadge.jsx        Risk level pill badge
 │   │   │   │   ├── RiskMeter.jsx        Visual risk score fill bar
 │   │   │   │   └── TESCard.jsx          Composite Threat Escalation Score card
+│   │   │   ├── map/                 Geographic map components
+│   │   │   │   ├── IntelligenceMap.jsx  Primary Leaflet map container
+│   │   │   │   ├── RegionPopup.jsx      Interactive map marker popup
+│   │   │   │   ├── RiskLegend.jsx       Color-coded map legend
+│   │   │   │   └── MapControls.jsx      Fullscreen map controls
 │   │   │   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
 │   ├── services/
 │   │   └── api.js               Axios HTTP client
 │   └── styles/
-│       └── App.css              Global design system
+│       ├── App.css              Global design system
+│       └── map.css              Intelligence map styling
 ├── index.html
 ├── package.json
 └── vite.config.js
@@ -47,6 +53,8 @@ frontend/
 | react-dom | DOM rendering |
 | react-router-dom | Client-side routing |
 | axios | HTTP client for backend communication |
+| leaflet | Core mapping library |
+| react-leaflet | React bindings for Leaflet maps |
 
 ---
 
@@ -67,18 +75,21 @@ Page-level layout component. Renders:
 
 ### MainInterface.jsx
 
-Core interactive component. Contains two columns:
+Core interactive component serving as the dashboard. Contains three primary sections:
 
-**Left Column — Text Analysis:**
+**Top Section — Intelligence Map:**
+- `IntelligenceMap`: Geographic visualization of regional risks, occupying the top portion of the dashboard.
+- "Refresh Dashboard" button that simultaneously fetches map and news data.
+
+**Bottom Left — Text Analysis:**
 - `InputBox` for manual text input
 - `ResultCard` for displaying the classification result, severity, and confidence
 - Calls `POST /predict` via `predictText()`
 - State holds the full prediction result object `{ prediction, confidence, severity, explanation }`
 
-**Right Column — Live News Dashboard:**
-- "Analyze Live News" button that calls `GET /news-analysis` via `fetchNewsAnalysis()`
-- Loading state with spinner
-- Region cards rendered from the response
+**Bottom Right — Live News Dashboard:**
+- Region cards rendered from the `GET /news-analysis` response
+- Displays detailed event breakdown for each region
 
 **Region Card** (rendered per region):
 - Region title
@@ -86,6 +97,13 @@ Core interactive component. Contains two columns:
 - `TESCard`: rich composite card displaying the Threat Escalation Score, Risk Level badge, and visual Risk Meter
 - Trend badge: red "increasing" with up arrow, green "decreasing" with down arrow, neutral "stable" with right arrow
 - Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper, followed by the collapsible `ExplanationPanel`
+
+### Map Components (components/map/)
+
+- **`IntelligenceMap.jsx`**: The primary `react-leaflet` wrapper. Sets up the OpenStreetMap tile layer with custom dark-mode CSS filters. Iterates over regional intelligence data to render geographic circles at specific coordinates, colored by risk level.
+- **`RegionPopup.jsx`**: An interactive Leaflet `<Popup>` containing a detailed breakdown of a region's intelligence payload (TES, Risk Level, Trend, Event Count, Average Confidence, and Severity Distribution).
+- **`RiskLegend.jsx`**: A floating legend mapping the four risk levels to their respective colors.
+- **`MapControls.jsx`**: Custom UI overlay for map actions (e.g., toggling fullscreen mode).
 
 ### InputBox.jsx
 

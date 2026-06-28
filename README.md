@@ -31,7 +31,9 @@ RSS Feed (BBC World)
       |
   Trend Analysis (temporal comparison)
       |
-  React Dashboard (Vite)
+  Intelligence Aggregation (/intelligence-map)
+      |
+  React Dashboard (Vite) + Geographic Map (Leaflet)
 ```
 
 ---
@@ -50,18 +52,21 @@ RSS Feed (BBC World)
 - Keyword-based geographic region extraction (Middle East, South Asia, Europe, USA)
 - Threshold-based anomaly detection per region
 - In-memory temporal trend analysis per region
+- Dedicated map service serving aggregated regional intelligence (`/intelligence-map`)
 - CORS-enabled API with Swagger documentation
 
 ### Frontend
 
 - React 19 application built with Vite
+- Interactive Geographic Intelligence Map (Leaflet & React-Leaflet) serving as primary dashboard
 - Two-column responsive layout (text analysis + live news dashboard)
 - Region cards featuring a rich `TESCard` with Threat Escalation Score, Risk Level, and visual Risk Meter
-- Color-coded event classification cards
+- Interactive Map popups with TES, risk metrics, severity distribution, and average confidence
+- Color-coded event classification cards and map regions
 - Signal confidence displayed as percentage with color-coded progress bar
 - Event severity displayed as a color-coded badge with severity bar
 - Explainable Intelligence: Collapsible reasoning panel detailing why a prediction was made
-- Real-time loading states and error handling
+- Real-time loading states, error handling, and map fullscreen controls
 
 ---
 
@@ -74,6 +79,7 @@ RSS Feed (BBC World)
 | ML Runtime | PyTorch |
 | News Ingestion | feedparser (RSS) |
 | Frontend Framework | React 19 |
+| Maps Integration | Leaflet / React-Leaflet |
 | Build Tool | Vite |
 | HTTP Client | Axios |
 | Routing | react-router-dom |
@@ -109,7 +115,7 @@ Classify a single text input.
 
 ### GET /news-analysis
 
-Fetch and analyze live news. Returns region-grouped intelligence.
+Fetch and analyze live news. Returns region-grouped intelligence with detailed events.
 
 **Response:**
 ```json
@@ -138,6 +144,31 @@ Fetch and analyze live news. Returns region-grouped intelligence.
 
 > TES range is `[0.0, 1.5]`. A single CRITICAL conflict event at full confidence produces `1.0 × 1.0 × 1.5 = 1.5`.
 
+### GET /intelligence-map
+
+Aggregate intelligence payload for geographic map visualizations, stripping detailed events.
+
+**Response:**
+```json
+{
+  "regions": [
+    {
+      "region": "South Asia",
+      "risk_level": "CRITICAL",
+      "risk_score": 1.1340,
+      "tes": 1.1340,
+      "trend": "increasing",
+      "anomaly": true,
+      "event_count": 1,
+      "confidence_average": 0.9812,
+      "severity_distribution": {
+        "LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 1
+      }
+    }
+  ]
+}
+```
+
 ---
 
 ## Project Structure
@@ -157,6 +188,7 @@ AEGIS-AI/
 │   │   ├── services/
 │   │   │   ├── anomaly_service.py
 │   │   │   ├── explanation_service.py
+│   │   │   ├── map_service.py
 │   │   │   ├── news_service.py
 │   │   │   ├── predictor.py
 │   │   │   ├── region_service.py
@@ -177,6 +209,11 @@ AEGIS-AI/
 │   │   │   │   ├── RiskBadge.jsx
 │   │   │   │   ├── RiskMeter.jsx
 │   │   │   │   └── TESCard.jsx
+│   │   │   ├── map/
+│   │   │   │   ├── IntelligenceMap.jsx
+│   │   │   │   ├── MapControls.jsx
+│   │   │   │   ├── RegionPopup.jsx
+│   │   │   │   └── RiskLegend.jsx
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
 │   │   │   ├── ResultCard.jsx
@@ -186,7 +223,8 @@ AEGIS-AI/
 │   │   ├── services/
 │   │   │   └── api.js
 │   │   ├── styles/
-│   │   │   └── App.css
+│   │   │   ├── App.css
+│   │   │   └── map.css
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── package.json
