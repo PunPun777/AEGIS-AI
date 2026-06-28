@@ -1,0 +1,238 @@
+/* ── Intelligence Map Styles ───────────────────────────────────────────── */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+}
+
+.dashboard-map-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.map-container-wrapper {
+  position: relative;
+  height: 65vh;
+  min-height: 400px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.map-loading, .map-placeholder {
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+}
+
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.map-wrapper.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: var(--color-bg);
+}
+
+.intelligence-map {
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+/* Dark mode tiles using CSS filters */
+.map-tiles {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* Risk Legend */
+.risk-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 1000;
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.risk-legend-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  color: var(--color-text-primary);
+}
+
+.risk-legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.legend-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* Map Controls */
+.map-controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+}
+
+.map-control-btn {
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-card);
+}
+
+.map-control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Region Popup */
+.region-popup .leaflet-popup-content-wrapper {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0;
+  box-shadow: var(--shadow-card);
+}
+
+.region-popup .leaflet-popup-tip {
+  background: var(--color-surface);
+}
+
+.region-popup-content {
+  padding: 16px;
+}
+
+.region-popup-content h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.popup-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.stat-label {
+  color: var(--color-text-secondary);
+}
+
+.stat-value {
+  font-weight: 600;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.risk-low { color: var(--color-normal); }
+.risk-moderate { color: #eab308; }
+.risk-high { color: var(--color-protest); }
+.risk-critical { color: var(--color-conflict); }
+
+.popup-severity {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.popup-severity h4 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+}
+
+.popup-severity ul {
+  list-style: none;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sev-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.sev-critical { background: var(--color-conflict); }
+.sev-high { background: var(--color-protest); }
+.sev-medium { background: #eab308; }
+.sev-low { background: var(--color-normal); }
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+  .map-container-wrapper {
+    height: 50vh;
+  }
+  .interface-layout {
+    flex-direction: column;
+  }
+}
