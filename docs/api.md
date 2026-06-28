@@ -24,21 +24,34 @@ Classify a single text input into a geopolitical event category. Returns the pre
 
 #### Response
 
-```json
 {
   "prediction": "conflict | protest | normal",
   "confidence": 0.0,
   "severity": "LOW | MEDIUM | HIGH | CRITICAL",
-  "explanation": ["reason 1", "reason 2"]
+  "explanation": ["reason 1", "reason 2"],
+  "original_prediction": "normal",
+  "overridden": true,
+  "override_reason": "string",
+  "matched_categories": ["string"],
+  "matched_keywords": ["string"],
+  "keyword_score": 0.0,
+  "override_score": 0.0
 }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `prediction` | `string` | Predicted class: `"conflict"`, `"protest"`, or `"normal"` |
-| `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
+| `prediction` | `string` | Final predicted class: `"conflict"`, `"protest"`, or `"normal"` |
+| `confidence` | `float` | Softmax probability of the originally predicted class, in range `[0.0, 1.0]` |
 | `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 | `explanation` | `array` | List of reasoning strings explaining the prediction |
+| `original_prediction` | `string` | The initial ML prediction before any domain overrides |
+| `overridden` | `boolean` | `true` if the Hybrid Decision Engine overrode the ML prediction |
+| `override_reason` | `string` | Analyst-grade prose explaining the decision |
+| `matched_categories` | `array` | List of semantic categories that fired (e.g. `["military"]`) |
+| `matched_keywords` | `array` | List of specific matched keywords/phrases |
+| `keyword_score` | `float` | Numeric strength of the domain signal |
+| `override_score` | `float` | The score that triggered the override (`0.0` if not overridden) |
 
 #### Examples
 
@@ -56,10 +69,45 @@ Response:
   "confidence": 0.9812,
   "severity": "CRITICAL",
   "explanation": [
+    "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
     "Missile or projectile terminology detected",
     "Aerial strike language identified",
     "Border conflict context found"
-  ]
+  ],
+  "original_prediction": "conflict",
+  "overridden": false,
+  "override_reason": "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
+  "matched_categories": [],
+  "matched_keywords": [],
+  "keyword_score": 0.0,
+  "override_score": 0.0
+}
+```
+
+**Hybrid Override (ML predicted 'normal', but domain rules fired):**
+
+Request:
+```json
+{ "text": "Missile barrage struck civilian infrastructure" }
+```
+
+Response:
+```json
+{
+  "prediction": "conflict",
+  "confidence": 0.6103,
+  "severity": "CRITICAL",
+  "explanation": [
+    "Moderate missile and projectile, military deployment terminology detected (2 active indicator group(s), score 0.260). Multiple conflict indicators outweighed the ML prediction...",
+    "Missile or projectile terminology detected"
+  ],
+  "original_prediction": "normal",
+  "overridden": true,
+  "override_reason": "Moderate missile and projectile, military deployment terminology detected (2 active indicator group(s), score 0.260). Multiple conflict indicators outweighed the ML prediction...",
+  "matched_categories": ["missile", "military"],
+  "matched_keywords": ["missile barrage", "military"],
+  "keyword_score": 0.26,
+  "override_score": 0.26
 }
 ```
 
@@ -153,10 +201,11 @@ Each event in the `events` array:
 | Field | Type | Description |
 |---|---|---|
 | `title` | `string` | Article headline |
-| `prediction` | `string` | Classification: `"conflict"`, `"protest"`, or `"normal"` |
-| `confidence` | `float` | Softmax probability of the predicted class, in range `[0.0, 1.0]` |
+| `prediction` | `string` | Final predicted class: `"conflict"`, `"protest"`, or `"normal"` |
+| `confidence` | `float` | Softmax probability of the originally predicted class, in range `[0.0, 1.0]` |
 | `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 | `explanation` | `array` | List of reasoning strings explaining the prediction |
+| `overridden` | `boolean` | `true` if the Hybrid Decision Engine overrode the ML prediction |
 
 #### TES Calculation
 

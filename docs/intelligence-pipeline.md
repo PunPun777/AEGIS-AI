@@ -38,9 +38,22 @@ confidence = probabilities[0][pred_index].item()
 **Input**: Softmax probability tensor from stage 2
 **Output**: Float in `[0.0, 1.0]`
 
-Confidence is produced as part of the prediction result and propagated through all downstream stages. Every event carries a `confidence` score that is consumed by `tes_service.py`.
+Confidence is produced as part of the prediction result and propagated through all downstream stages. Every event carries a `confidence` score that is consumed by `tes_service.py` and the Hybrid Decision Engine.
 
-### 4. Event Severity
+### 4. Hybrid Decision Engine
+
+**Service**: `hybrid_decision_service.py` and `decision_explainer.py`
+**Input**: Text string, ML prediction string, ML confidence float
+**Output**: `HybridDecision` dataclass containing final prediction, original prediction, override flags, and structured `DecisionExplanation`.
+
+Evaluates whether to override a low-confidence ML prediction based on domain rules.
+- **Trusted ML**: If `confidence >= 0.80`, the ML prediction is trusted without scanning for keywords.
+- **Conflict Override**: Scans the text for conflict indicators across 14 categories. If the weighted score > 0.40 and is not dampened by peace signals, it overrides non-conflict predictions to `conflict`.
+- **Protest Override**: Scans for protest indicators. If score > 0.35, overrides non-protest predictions to `protest`.
+
+Produces structured reasoning detailing exactly why a decision was kept or overridden, including the matched categories and phrases.
+
+### 5. Event Severity
 
 **Service**: `severity_service.py`
 **Input**: Prediction label string, original article text string
@@ -58,15 +71,17 @@ Critical keywords: Handled by `keyword_matcher.has_match()` using `CRITICAL_SEVE
 
 Severity is propagated through all downstream stages. `tes_service.py` consumes the `severity` key to apply the correct multiplier.
 
-### 5. Explainable Intelligence
+### 6. Explainable Intelligence
 
 **Service**: `explanation_service.py`
-**Input**: Prediction label string, original article text string
+**Input**: Final prediction label string, original article text string, optional `DecisionExplanation`
 **Output**: List of human-readable explanation strings
 
 Delegates to `keyword_matcher.match_explanation_groups()` to scan the text for predefined keyword groups mapped to the prediction class. Generates reusable explanation sentences (e.g., "Missile or projectile terminology detected"). Uses longest-phrase priority to accurately parse compound expressions like "exchange of fire" without leaking internal rules or heuristics.
 
-### 6. Region Extraction
+If a `DecisionExplanation` was provided by the Hybrid Decision Engine, its structured prose reasoning is prepended as the first explanation sentence so analysts can immediately see the rationale behind the AI's final decision.
+
+### 7. Region Extraction
 
 **Service**: `region_service.py`
 **Input**: Single text string
@@ -87,7 +102,7 @@ Performs case-insensitive matching using `REGION_KEYWORDS` from `domain_knowledg
 
 Returns `"Other"` if no keywords match. First matching region wins.
 
-### 7. Event Grouping
+### 8. Event Grouping
 
 **Location**: `routes.py` (orchestration logic)
 
@@ -97,15 +112,18 @@ After classification, explanation, and region extraction, events are grouped int
 {
     "title": "...",
     "prediction": "conflict",
-    "confidence": 0.9271,
+    "original_prediction": "normal",
+    "confidence": 0.6500,
     "severity": "CRITICAL",
+    "overridden": True,
+    "override_reason": "...",
     "explanation": [
-        "Military terminology detected"
+        "..."
     ]
 }
 ```
 
-### 8. Threat Escalation Score (TES)
+### 9. Threat Escalation Score (TES)
 
 **Service**: `tes_service.py`
 **Input**: List of events for a region
@@ -152,7 +170,7 @@ Returns a dictionary with the numeric score and a mapped risk level. Backward co
 | >= 0.31 | `"MODERATE"` |
 | < 0.31 | `"LOW"` |
 
-### 9. Anomaly Detection
+### 10. Anomaly Detection
 
 **Service**: `anomaly_service.py`
 **Input**: List of events for a region
@@ -160,7 +178,7 @@ Returns a dictionary with the numeric score and a mapped risk level. Backward co
 
 Calculates the ratio of high-severity events (conflict + protest) to total events. If the ratio exceeds 0.6 (60%), the region is flagged as anomalous.
 
-### 10. Trend Analysis
+### 11. Trend Analysis
 
 **Service**: `trend_service.py`
 **Input**: Region name, current TES value
@@ -175,7 +193,7 @@ Maintains an in-memory dictionary mapping region names to their previous TES val
 
 The previous value is updated after each comparison. State is lost on server restart.
 
-### 11. Intelligence Aggregation (Map Endpoint)
+### 12. Intelligence Aggregation (Map Endpoint)
 
 **Service**: `map_service.py`
 **Input**: Live grouped regions and events
@@ -201,7 +219,9 @@ The pipeline produces a JSON object keyed by region:
       {
         "title": "Article headline text",
         "prediction": "conflict",
-        "confidence": 0.9812,
+        "original_prediction": "normal",
+        "overridden": true,
+        "confidence": 0.6500,
         "severity": "CRITICAL",
         "explanation": [
           "Military terminology detected"
@@ -223,9 +243,10 @@ fetch_news()
 [article_1, article_2, ..., article_N]
     |
     |--- for each article:
-    |       predict(article)     -> { prediction, confidence, severity, explanation }
+    |       predict(article)     -> { prediction, confidence, ... }
+    |       decide(prediction)   -> hybrid overrides
     |       get_region(article)  -> region
-    |       group into: { region: [{ title, prediction, confidence, severity, explanation }] }
+    |       group into: { region: [{ title, prediction, confidence, severity, explanation, ... }] }
     |
     v
 { region: [{ title, prediction, confidence, severity, explanation }] }

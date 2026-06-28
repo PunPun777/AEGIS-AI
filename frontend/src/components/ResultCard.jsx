@@ -2,6 +2,7 @@ import React from "react";
 import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
 import ExplanationPanel from "./intelligence/ExplanationPanel";
+import HybridDecisionPanel from "./intelligence/HybridDecisionPanel";
 
 /** Maps prediction labels to display metadata */
 const PREDICTION_META = {
@@ -28,7 +29,18 @@ const PREDICTION_META = {
   },
 };
 
-const ResultCard = ({ prediction, confidence, severity, explanation }) => {
+const ResultCard = ({ result }) => {
+  const {
+    prediction,
+    confidence,
+    severity,
+    explanation,
+    original_prediction,
+    overridden,
+    override_reason,
+    matched_categories,
+    matched_keywords,
+  } = result;
   const meta = PREDICTION_META[prediction] ?? {
     label: prediction?.toUpperCase() ?? "UNKNOWN",
     icon: "⚪",
@@ -40,7 +52,12 @@ const ResultCard = ({ prediction, confidence, severity, explanation }) => {
     <div className={`result-card result-card--${prediction}`} role="status">
       {/* Header */}
       <div className="result-card__header">
-        <span className="result-card__badge">ANALYSIS COMPLETE</span>
+        <span className="result-card__badge">
+          {overridden ? "HYBRID DECISION" : "ML PREDICTION"}
+        </span>
+        {overridden && (
+          <span className="result-card__hybrid-badge">OVERRIDE</span>
+        )}
       </div>
 
       {/* Icon + Label */}
@@ -61,6 +78,13 @@ const ResultCard = ({ prediction, confidence, severity, explanation }) => {
       </div>
       
       <ExplanationPanel explanations={explanation} />
+      <HybridDecisionPanel 
+        overridden={overridden}
+        originalPrediction={original_prediction}
+        reason={override_reason}
+        categories={matched_categories}
+        keywords={matched_keywords}
+      />
     </div>
   );
 };

@@ -11,6 +11,8 @@ NLP Classification (DistilBERT)
     |
 Signal Confidence (softmax)
     |
+  Hybrid Decision Engine (Keyword Override)
+    |
   Event Severity (using Domain Knowledge & Keyword Matcher)
       |
   Explainable Intelligence (using Domain Knowledge & Keyword Matcher)
@@ -49,6 +51,8 @@ app/
 │   └── schema.py         Pydantic request/response schemas
 └── services/
     ├── predictor.py       NLP inference, confidence scoring, severity assignment
+    ├── hybrid_decision_service.py Overrides low-confidence ML predictions
+    ├── decision_explainer.py Generates structured reasoning for hybrid decisions
     ├── severity_service.py Rule-based event severity classification
     ├── explanation_service.py Generates human-readable reasoning for predictions
     ├── map_service.py     Aggregates regional intelligence for map visualizations
@@ -65,7 +69,7 @@ app/
 Defines HTTP endpoints. Orchestrates calls to the services layer. Contains no business logic.
 
 **Services Layer** (`services/`):
-Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` calls `severity_service.py` and `explanation_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score. `map_service.py` aggregates regional intelligence for the map endpoints.
+Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` passes ML output to `hybrid_decision_service.py` which evaluates domain signals and calls `decision_explainer.py`. It then calls `severity_service.py` and `explanation_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score. `map_service.py` aggregates regional intelligence for the map endpoints.
 
 **ML Layer** (`ml/model_loader.py`):
 Loads the DistilBERT model and tokenizer at startup. Exports module-level `model` and `tokenizer` objects consumed by the predictor service.
@@ -96,14 +100,13 @@ src/
 │   │   ├── IntelligenceMap.jsx
 │   │   ├── RegionPopup.jsx
 │   │   ├── RiskLegend.jsx
-│   │   └── MapControls.jsx
 │   ├── intelligence/        Explainable Intelligence & TES UI
 │   │   ├── ExplanationPanel.jsx
 │   │   ├── ExplanationList.jsx
 │   │   ├── ExplanationItem.jsx
 │   │   ├── RiskBadge.jsx
-│   │   ├── RiskMeter.jsx
-│   │   └── TESCard.jsx
+│   │   ├── MainInterface.jsx    Primary dashboard: text analysis + live news
+│   ├── EventCard.jsx        Reusable event card displaying intelligence metrics
 │   ├── InputBox.jsx         Text input with validation and loading states
 │   ├── ResultCard.jsx       Single-text classification result display
 │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage and progress bar
@@ -135,7 +138,8 @@ App
     │           │   ├── RiskBadge
     │           │   └── RiskMeter
     │           ├── Trend Badge
-    │           └── Event Cards
+    │           └── Event Cards (EventCard)
+    │               ├── HybridDecisionPanel
     │               ├── SeverityBadge
     │               ├── ConfidenceIndicator
     │               └── ExplanationPanel
@@ -150,9 +154,11 @@ App
 
 ```
 User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predict()
-    -> DistilBERT inference -> softmax -> get_severity() -> generate_explanation()
-    -> { prediction, confidence, severity, explanation }
-    -> ResultCard -> SeverityBadge + ConfidenceIndicator + ExplanationPanel
+    -> DistilBERT inference -> softmax
+    -> decide() [Hybrid Decision Engine]
+    -> get_severity() -> generate_explanation()
+    -> { prediction, original_prediction, overridden, confidence, severity, explanation, ... }
+    -> ResultCard -> SeverityBadge + ConfidenceIndicator + ExplanationPanel + HybridDecisionPanel
 ```
 
 ### Live News Analysis
@@ -160,7 +166,7 @@ User Input -> InputBox -> predictText(text) -> POST /predict -> predictor.predic
 ```
 Button Click -> fetchNewsAnalysis() -> GET /news-analysis
     -> fetch_news() [RSS]
-    -> predict() [per article] -> { prediction, confidence, severity, explanation }
+    -> predict() [per article] -> { prediction, overridden, confidence, severity, explanation, ... }
     -> get_region() [per article]
     -> group by region -> { region: [{ title, prediction, confidence, severity, explanation }] }
     -> calculate_tes() [per region]
