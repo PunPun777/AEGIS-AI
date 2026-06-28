@@ -52,9 +52,9 @@ Rule-based severity assignment:
 |---|---|---|---|
 | `"normal"` | `"LOW"` | N/A | N/A |
 | `"protest"` | `"MEDIUM"` | N/A | N/A |
-| `"conflict"` | `"HIGH"` | Critical keyword in text | `"CRITICAL"` |
+| `"conflict"` | `"HIGH"` | Critical keyword match via `keyword_matcher` | `"CRITICAL"` |
 
-Critical keywords: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`.
+Critical keywords: Handled by `keyword_matcher.has_match()` using `CRITICAL_SEVERITY_TRIGGERS` (covering 200+ terms including missiles, airstrikes, terrorism, and nuclear threats) from `domain_knowledge.py`.
 
 Severity is propagated through all downstream stages. `tes_service.py` consumes the `severity` key to apply the correct multiplier.
 
@@ -64,7 +64,7 @@ Severity is propagated through all downstream stages. `tes_service.py` consumes 
 **Input**: Prediction label string, original article text string
 **Output**: List of human-readable explanation strings
 
-Scans the text for predefined keyword groups mapped to the prediction class. Generates reusable explanation sentences (e.g., "Military terminology detected") without leaking internal rules or heuristics.
+Delegates to `keyword_matcher.match_explanation_groups()` to scan the text for predefined keyword groups mapped to the prediction class. Generates reusable explanation sentences (e.g., "Missile or projectile terminology detected"). Uses longest-phrase priority to accurately parse compound expressions like "exchange of fire" without leaking internal rules or heuristics.
 
 ### 6. Region Extraction
 
@@ -72,14 +72,18 @@ Scans the text for predefined keyword groups mapped to the prediction class. Gen
 **Input**: Single text string
 **Output**: Region name string
 
-Performs case-insensitive keyword matching against predefined keyword lists for four regions:
+Performs case-insensitive matching using `REGION_KEYWORDS` from `domain_knowledge.py` covering 8 major regions:
 
 | Region | Example Keywords |
 |---|---|
-| Middle East | israel, palestine, gaza, iran, iraq, syria |
+| Middle East | israel, gaza, iran, syria, hezbollah |
 | South Asia | india, pakistan, afghanistan, kashmir |
-| Europe | ukraine, russia, france, nato, kyiv |
-| USA | united states, washington, congress, pentagon |
+| East Asia | china, taiwan, japan, north korea, south china sea |
+| Europe | ukraine, russia, france, nato, kyiv, donbas |
+| Africa | nigeria, ethiopia, somalia, sahel |
+| Latin America | mexico, colombia, brazil, venezuela, cartels |
+| Central Asia | kazakhstan, uzbekistan, azerbaijan |
+| USA | united states, washington, pentagon |
 
 Returns `"Other"` if no keywords match. First matching region wins.
 

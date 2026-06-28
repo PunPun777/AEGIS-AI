@@ -19,9 +19,11 @@ RSS Feed (BBC World)
       |
   Signal Confidence (softmax)
       |
-  Event Severity (rule-based)
+  Explainable Intelligence & Severity (via keyword_matcher)
       |
-  Explainable Intelligence (modular keyword mapping)
+  Region Extraction (via keyword_matcher)
+      |
+  Geopolitical Domain Intelligence Layer (domain_knowledge)
       |
   Region Extraction (keyword-based)
       |
@@ -45,11 +47,13 @@ RSS Feed (BBC World)
 - Modular FastAPI architecture with separated routes, services, and configuration
 - DistilBERT-based event classification (conflict / protest / normal)
 - Signal confidence scoring derived from model logits via softmax
-- Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL)
+- Geopolitical Domain Intelligence Layer: Centralized, comprehensive geopolitical vocabulary covering 21+ categories
+- Intelligent Keyword Matcher: Reusable matching engine featuring longest-phrase priority, covered-span deduplication, and compound phrase support
+- Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL) using domain knowledge
 - Explainable Intelligence: Modular keyword-based reasoning generation for model predictions
 - Confidence- and severity-weighted Threat Escalation Score (TES) per region
 - RSS-based live news ingestion (BBC World)
-- Keyword-based geographic region extraction (Middle East, South Asia, Europe, USA)
+- Geographic region extraction (Middle East, South Asia, East Asia, Europe, Africa, Latin America, Central Asia, USA)
 - Threshold-based anomaly detection per region
 - In-memory temporal trend analysis per region
 - Dedicated map service serving aggregated regional intelligence (`/intelligence-map`)
@@ -180,7 +184,9 @@ AEGIS-AI/
 │   │   ├── api/
 │   │   │   └── routes.py
 │   │   ├── core/
-│   │   │   └── config.py
+│   │   │   ├── config.py
+│   │   │   ├── domain_knowledge.py
+│   │   │   └── keyword_matcher.py
 │   │   ├── ml/
 │   │   │   └── model_loader.py
 │   │   ├── models/

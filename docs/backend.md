@@ -18,7 +18,9 @@ backend/
 │   │   └── routes.py
 │   ├── core/
 │   │   ├── __init__.py
-│   │   └── config.py
+│   │   ├── config.py
+│   │   ├── domain_knowledge.py
+│   │   └── keyword_matcher.py
 │   ├── ml/
 │   │   ├── __init__.py
 │   │   └── model_loader.py
@@ -58,6 +60,24 @@ backend/
 | `RSS_URL` | BBC World RSS feed URL | News ingestion source |
 | `NEWS_LIMIT` | `15` | Maximum articles per fetch |
 | `LABEL_MAP` | `{0: "conflict", 1: "normal", 2: "protest"}` | Model output index to label mapping |
+
+### domain_knowledge.py
+
+**Geopolitical Domain Intelligence Layer**
+
+Acts as the single source of truth for all geopolitical vocabulary. Defines over 21 named `frozenset[str]` categories (e.g., `AIRSTRIKE_KEYWORDS`, `CYBER_KEYWORDS`, `COUP_KEYWORDS`). It also defines composite sets like `CRITICAL_SEVERITY_TRIGGERS` and structures explanation data into groups (e.g., `CONFLICT_EXPLANATION_GROUPS`). Contains expanded regional vocabulary covering 8 major geopolitical zones.
+
+### keyword_matcher.py
+
+**Intelligent Keyword Matcher**
+
+Provides a reusable matching engine for all text-scanning services. Capabilities include:
+- **Longest-phrase priority**: Matches "missile barrage" before "missile".
+- **Covered-span deduplication**: Prevents double-counting overlapping shorter phrases.
+- **Compound phrase support**: Matches multi-word expressions like "exchange of fire".
+- **Category Scoring & Confidence**: Can score text across multiple categories to derive signal strength.
+
+Public API includes `has_match()`, `match_phrases()`, `match_explanation_groups()`, and `score_categories()`.
 
 ---
 
@@ -102,13 +122,13 @@ Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Appl
 
 **Function**: `generate_explanation(text: str, prediction: str) -> list[str]`
 
-Implements modular, rule-based reasoning generation. Scans the lowercase text against predefined groups of keywords (e.g., military, protests, economic) categorized by the `prediction` label. Each matching keyword group appends a human-readable analyst sentence to the list. If no keywords match, falls back to a generic explanation string for that class. Keeps inference and keyword logic strictly decoupled.
+Implements modular, rule-based reasoning generation. Delegates to `keyword_matcher.match_explanation_groups()` to scan the text against predefined explanation groups imported from `domain_knowledge.py`. Automatically supports multi-word expressions and longest-phrase priority. Each matching group appends a human-readable analyst sentence to the list (e.g., "Missile or projectile terminology detected"). If no groups match, falls back to a generic explanation string for that class. Keeps inference and keyword logic strictly decoupled.
 
 ### severity_service.py
 
 **Function**: `get_severity(prediction: str, text: str) -> str`
 
-Implements rule-based severity assignment. For `"conflict"` predictions, scans the headline text (case-insensitive) against `CRITICAL_KEYWORDS`: `missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`. Returns `"CRITICAL"` if any keyword is found, `"HIGH"` otherwise. For all other predictions, defers to `SEVERITY_MAP`: `"protest"` → `"MEDIUM"`, `"normal"` → `"LOW"`.
+Implements rule-based severity assignment. For `"conflict"` predictions, it calls `keyword_matcher.has_match()` using the `CRITICAL_SEVERITY_TRIGGERS` imported from `domain_knowledge.py`. The trigger set covers hundreds of terms including weapons, terrorism, nuclear threats, and cyber warfare. Returns `"CRITICAL"` if any phrase matches, `"HIGH"` otherwise. For all other predictions, defers to `SEVERITY_MAP`: `"protest"` → `"MEDIUM"`, `"normal"` → `"LOW"`.
 
 ### tes_service.py
 
@@ -166,7 +186,7 @@ Parses the configured RSS feed using feedparser. Returns up to `NEWS_LIMIT` arti
 
 **Function**: `get_region(text: str) -> str`
 
-Matches text against keyword lists for four regions: Middle East, South Asia, Europe, USA. Returns the first matching region or "Other" if no match is found. Matching is case-insensitive.
+Matches text against comprehensive regional vocabulary imported from `domain_knowledge.py` covering 8 regions (Middle East, South Asia, East Asia, Europe, Africa, Latin America, Central Asia, USA). Returns the first matching region or "Other" if no match is found. Matching is case-insensitive and leverages the expanded domain dictionaries.
 
 ### anomaly_service.py
 

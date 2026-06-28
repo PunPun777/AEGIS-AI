@@ -1,11 +1,26 @@
-CRITICAL_KEYWORDS: frozenset[str] = frozenset({
-    "missile",
-    "airstrike",
-    "explosion",
-    "terror",
-    "invasion",
-    "war",
-})
+"""
+severity_service.py
+-------------------
+Derives a rule-based severity level for a classified event.
+
+All vocabulary is imported from the centralised
+app.core.domain_knowledge module.
+
+Matching is performed by app.core.keyword_matcher, which applies
+longest-phrase priority and covered-span deduplication.  This means
+compound phrases such as "missile barrage" or "air defence system"
+are recognised correctly without double-counting sub-tokens.
+
+Severity rules
+--------------
+- conflict   → CRITICAL   if any CRITICAL_SEVERITY_TRIGGER phrase matches
+- conflict   → HIGH       otherwise
+- protest    → MEDIUM
+- normal     → LOW
+"""
+
+from app.core.domain_knowledge import CRITICAL_SEVERITY_TRIGGERS
+from app.core.keyword_matcher import has_match
 
 SEVERITY_MAP: dict[str, str] = {
     "normal": "LOW",
@@ -16,8 +31,7 @@ SEVERITY_MAP: dict[str, str] = {
 
 def get_severity(prediction: str, text: str) -> str:
     if prediction == "conflict":
-        lower = text.lower()
-        if any(keyword in lower for keyword in CRITICAL_KEYWORDS):
+        if has_match(text, CRITICAL_SEVERITY_TRIGGERS):
             return "CRITICAL"
         return "HIGH"
     return SEVERITY_MAP.get(prediction, "LOW")

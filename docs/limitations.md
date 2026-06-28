@@ -20,9 +20,8 @@
 
 ## Severity Classification Limitations
 
-- Severity is entirely rule-based, not learned from data
-- The critical keyword list (`missile`, `airstrike`, `explosion`, `terror`, `invasion`, `war`) is fixed and does not adapt to emerging or context-specific escalation language
-- A `conflict` event without any listed keyword defaults to `HIGH` even if the underlying headline describes a severe incident using different vocabulary
+- Severity is rule-based, relying on keyword matches rather than being learned from data
+- A `conflict` event without any matched critical keywords defaults to `HIGH` even if the underlying headline describes a severe incident using novel vocabulary
 - Severity does not factor in confidence: a low-confidence `conflict` prediction escalates severity identically to a high-confidence one
 - `protest` events are always `MEDIUM` regardless of scale, duration, or accompanying violence
 
@@ -30,9 +29,8 @@
 
 ## Region Extraction Limitations
 
-- Keyword-based matching, not Named Entity Recognition
-- Limited to four predefined regions (Middle East, South Asia, Europe, USA)
-- Articles matching no keywords are grouped under "Other"
+- Region extraction relies on the `keyword_matcher` scanning the `domain_knowledge` vocabulary, not Named Entity Recognition (NER)
+- Articles matching no keywords in the domain dictionary are grouped under "Other"
 - Cannot detect multiple regions within a single article
 
 ---
@@ -73,8 +71,7 @@
 - Apply confidence calibration (temperature scaling, Platt scaling)
 - Replace rule-based severity with a learned severity classifier trained on labeled event data
 - Incorporate confidence and severity weighting into TES calculation
-- Expand critical keyword list or replace with semantic escalation detection
-- Replace keyword region extraction with NER
+- Replace keyword-based region extraction with NER models (e.g., spaCy, specialized transformer)
 - Implement persistent storage for trend history
 - Add adaptive anomaly thresholds
 - Add authentication and rate limiting for production deployment

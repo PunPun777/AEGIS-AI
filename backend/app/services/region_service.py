@@ -1,25 +1,20 @@
-REGION_KEYWORDS: dict[str, list[str]] = {
-    "Middle East": [
-        "israel", "palestine", "gaza", "iran", "iraq", "syria", "lebanon",
-        "saudi", "arabia", "yemen", "jordan", "egypt", "turkey", "qatar",
-        "kuwait", "bahrain", "oman", "dubai", "tehran", "baghdad", "beirut",
-    ],
-    "South Asia": [
-        "india", "pakistan", "afghanistan", "bangladesh", "sri lanka",
-        "nepal", "bhutan", "maldives", "delhi", "mumbai", "karachi",
-        "kabul", "dhaka", "colombo", "kashmir",
-    ],
-    "Europe": [
-        "ukraine", "russia", "france", "germany", "uk", "britain", "england",
-        "spain", "italy", "poland", "nato", "eu", "brussels", "berlin",
-        "paris", "london", "rome", "madrid", "kyiv", "moscow",
-    ],
-    "USA": [
-        "usa", "united states", "america", "washington", "biden", "trump",
-        "congress", "senate", "pentagon", "white house", "new york",
-        "california", "texas", "florida", "chicago",
-    ],
-}
+"""
+region_service.py
+-----------------
+Extracts the geographic region from a news article headline.
+
+All regional vocabulary is imported from the centralised
+app.core.domain_knowledge module; no keyword lists are defined here.
+
+Logic
+-----
+Iterates over REGION_KEYWORDS in definition order.  The first region
+whose keyword list contains a match (case-insensitive substring) is
+returned.  Returns "Other" if no region matches.
+"""
+
+from app.core.domain_knowledge import REGION_KEYWORDS
+
 
 def get_region(text: str) -> str:
     lower = text.lower()
