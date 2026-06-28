@@ -4,6 +4,7 @@ from app.ml.model_loader import model, tokenizer
 from app.core.config import LABEL_MAP
 from app.services.severity_service import get_severity
 from app.services.explanation_service import generate_explanation
+from app.services.hybrid_decision_service import decide
 
 
 def predict(text: str) -> dict:
@@ -14,12 +15,17 @@ def predict(text: str) -> dict:
 
     probabilities = F.softmax(outputs.logits, dim=-1)
     pred_index = probabilities.argmax().item()
-    confidence = probabilities[0][pred_index].item()
-    prediction = LABEL_MAP[pred_index]
+    ml_confidence = probabilities[0][pred_index].item()
+    ml_prediction = LABEL_MAP[pred_index]
+
+    decision = decide(text, ml_prediction, ml_confidence)
 
     return {
-        "prediction": prediction,
-        "confidence": round(confidence, 4),
-        "severity": get_severity(prediction, text),
-        "explanation": generate_explanation(text, prediction),
+        "prediction":          decision.prediction,
+        "confidence":          round(decision.confidence, 4),
+        "severity":            get_severity(decision.prediction, text),
+        "explanation":         generate_explanation(text, decision.prediction),
+        "original_prediction": decision.original_prediction,
+        "overridden":          decision.overridden,
+        "override_reason":     decision.override_reason,
     }

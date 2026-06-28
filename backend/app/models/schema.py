@@ -10,6 +10,9 @@ class PredictionResult(BaseModel):
     confidence: float
     severity: str
     explanation: list[str]
+    original_prediction: str
+    overridden: bool
+    override_reason: str
 
 
 class RegionMapEntry(BaseModel):
