@@ -47,7 +47,7 @@ RSS Feed (BBC World)
 ### Backend
 
 - Modular FastAPI architecture with separated routes, services, and configuration
-- DistilBERT-based event classification (conflict / protest / normal)
+- DistilBERT-based event classification
 - Signal confidence scoring derived from model logits via softmax
 - Geopolitical Domain Intelligence Layer: Centralized, comprehensive geopolitical vocabulary covering 21+ categories
 - Hybrid Decision Engine: Intelligently aggregates ML and domain evidence (weighted category scoring) to decide whether to retain or override predictions, removing previous confidence-first bypass logic.
@@ -295,11 +295,17 @@ Development server: http://localhost:5173
 
 ## Model
 
+### Current (V1)
 - Architecture: DistilBERT (fine-tuned)
 - Training data: AG News with heuristic relabeling
-- Classes: conflict, protest, normal
+- Classes: conflict, protest, normal (Note: The V1 model frequently overpredicts "normal" with high confidence, necessitating the upcoming V2 model)
 - Confidence: softmax probability of the predicted class
 - Storage: local `backend/model/` directory (Git LFS)
+
+### Planned (V2)
+- Retrained DistilBERT with an expanded geopolitical dataset
+- Richer geopolitical labels beyond the original 3 classes
+- Improved dataset balancing and conflict recognition
 
 ---
 
