@@ -4,7 +4,7 @@ import ResultCard from "./ResultCard";
 import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
 import TESCard from "./intelligence/TESCard";
-import ExplanationPanel from "./intelligence/ExplanationPanel";
+import EventCard from "./EventCard";
 import { fetchNewsAnalysis, predictText, fetchIntelligenceMap } from "../services/api";
 import IntelligenceMap from "./map/IntelligenceMap";
 
@@ -101,12 +101,7 @@ const MainInterface = () => {
           {/* Result Section */}
           {predictionResult && (
             <section className="interface-section" aria-label="Analysis result">
-              <ResultCard 
-                prediction={predictionResult.prediction} 
-                confidence={predictionResult.confidence} 
-                severity={predictionResult.severity}
-                explanation={predictionResult.explanation}
-              />
+              <ResultCard result={predictionResult} />
             </section>
           )}
         </div>
@@ -161,17 +156,7 @@ const MainInterface = () => {
                         {/* Event List */}
                         <div className="news-results">
                           {data.events.map((news, index) => (
-                            <div key={index} className={`news-card news-card--${news.prediction.toLowerCase()}`}>
-                              <div className="news-card__header">
-                                <span className="news-card__badge">{news.prediction}</span>
-                              </div>
-                              <h4 className="news-card__title">{news.title}</h4>
-                              <div className="news-card__meta-wrapper">
-                                <SeverityBadge severity={news.severity} />
-                                <ConfidenceIndicator confidence={news.confidence} />
-                              </div>
-                              <ExplanationPanel explanations={news.explanation} />
-                            </div>
+                            <EventCard key={index} news={news} />
                           ))}
                         </div>
                       </div>
