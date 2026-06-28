@@ -100,7 +100,10 @@
 - Centralized vocabulary covering 21+ categories (conflict, protest, nuclear, cyber, etc.)
 - Extended region extraction covering 8 major geopolitical zones
 - Intelligent Keyword Matcher (`keyword_matcher.py`) with longest-phrase priority, compound matching, and category scoring
+- Hybrid Decision Engine (`hybrid_decision_service.py`) to override low-confidence ML predictions with domain-specific rule evaluation
+- Explainable Intelligence 2.0 (`decision_explainer.py`) producing structured reasoning with matched categories and keywords
 - Refactored `severity_service.py` and `explanation_service.py` to use centralized vocabulary and matcher
+- Frontend dashboard updated with `HybridDecisionPanel` and `EventCard` components to expose AI overrides
 - Prepared shared intelligence architecture for future Multi-source OSINT and NER integration
 
 ---

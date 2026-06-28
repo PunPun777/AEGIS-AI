@@ -19,6 +19,8 @@ RSS Feed (BBC World)
       |
   Signal Confidence (softmax)
       |
+  Hybrid Decision Engine (Keyword Override)
+      |
   Explainable Intelligence & Severity (via keyword_matcher)
       |
   Region Extraction (via keyword_matcher)
@@ -48,9 +50,10 @@ RSS Feed (BBC World)
 - DistilBERT-based event classification (conflict / protest / normal)
 - Signal confidence scoring derived from model logits via softmax
 - Geopolitical Domain Intelligence Layer: Centralized, comprehensive geopolitical vocabulary covering 21+ categories
+- Hybrid Decision Engine: Intelligently overrides low-confidence ML predictions when strong domain signals (e.g., conflict or protest keywords) are present, calculating weighted category scores.
 - Intelligent Keyword Matcher: Reusable matching engine featuring longest-phrase priority, covered-span deduplication, and compound phrase support
 - Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL) using domain knowledge
-- Explainable Intelligence: Modular keyword-based reasoning generation for model predictions
+- Explainable Intelligence: Modular reasoning generation for model predictions and hybrid overrides
 - Confidence- and severity-weighted Threat Escalation Score (TES) per region
 - RSS-based live news ingestion (BBC World)
 - Geographic region extraction (Middle East, South Asia, East Asia, Europe, Africa, Latin America, Central Asia, USA)
@@ -67,8 +70,7 @@ RSS Feed (BBC World)
 - Region cards featuring a rich `TESCard` with Threat Escalation Score, Risk Level, and visual Risk Meter
 - Interactive Map popups with TES, risk metrics, severity distribution, and average confidence
 - Color-coded event classification cards and map regions
-- Signal confidence displayed as percentage with color-coded progress bar
-- Event severity displayed as a color-coded badge with severity bar
+- Hybrid Decision Panel: Collapsible UI detailing AI overrides, matched categories, and matched keywords
 - Explainable Intelligence: Collapsible reasoning panel detailing why a prediction was made
 - Real-time loading states, error handling, and map fullscreen controls
 
@@ -110,10 +112,18 @@ Classify a single text input.
   "confidence": 0.9812,
   "severity": "CRITICAL",
   "explanation": [
+    "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
     "Missile or projectile terminology detected",
     "Aerial strike language identified",
     "Border conflict context found"
-  ]
+  ],
+  "original_prediction": "conflict",
+  "overridden": false,
+  "override_reason": "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
+  "matched_categories": [],
+  "matched_keywords": [],
+  "keyword_score": 0.0,
+  "override_score": 0.0
 }
 ```
 
@@ -139,7 +149,14 @@ Fetch and analyze live news. Returns region-grouped intelligence with detailed e
         "explanation": [
           "Missile or projectile terminology detected",
           "Aerial strike language identified"
-        ]
+        ],
+        "original_prediction": "conflict",
+        "overridden": false,
+        "override_reason": "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
+        "matched_categories": [],
+        "matched_keywords": [],
+        "keyword_score": 0.0,
+        "override_score": 0.0
       }
     ]
   }
@@ -193,7 +210,9 @@ AEGIS-AI/
 │   │   │   └── schema.py
 │   │   ├── services/
 │   │   │   ├── anomaly_service.py
+│   │   │   ├── decision_explainer.py
 │   │   │   ├── explanation_service.py
+│   │   │   ├── hybrid_decision_service.py
 │   │   │   ├── map_service.py
 │   │   │   ├── news_service.py
 │   │   │   ├── predictor.py
@@ -212,6 +231,7 @@ AEGIS-AI/
 │   │   │   │   ├── ExplanationItem.jsx
 │   │   │   │   ├── ExplanationList.jsx
 │   │   │   │   ├── ExplanationPanel.jsx
+│   │   │   │   ├── HybridDecisionPanel.jsx
 │   │   │   │   ├── RiskBadge.jsx
 │   │   │   │   ├── RiskMeter.jsx
 │   │   │   │   └── TESCard.jsx
@@ -220,6 +240,7 @@ AEGIS-AI/
 │   │   │   │   ├── MapControls.jsx
 │   │   │   │   ├── RegionPopup.jsx
 │   │   │   │   └── RiskLegend.jsx
+│   │   │   ├── EventCard.jsx
 │   │   │   ├── InputBox.jsx
 │   │   │   ├── MainInterface.jsx
 │   │   │   ├── ResultCard.jsx

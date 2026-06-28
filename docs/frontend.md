@@ -24,6 +24,7 @@ frontend/
 │   │   │   │   ├── ExplanationItem.jsx  Individual reasoning bullet
 │   │   │   │   ├── ExplanationList.jsx  Container for reasoning items
 │   │   │   │   ├── ExplanationPanel.jsx Collapsible reasoning UI component
+│   │   │   │   ├── HybridDecisionPanel.jsx Collapsible UI for hybrid overrides
 │   │   │   │   ├── RiskBadge.jsx        Risk level pill badge
 │   │   │   │   ├── RiskMeter.jsx        Visual risk score fill bar
 │   │   │   │   └── TESCard.jsx          Composite Threat Escalation Score card
@@ -32,6 +33,7 @@ frontend/
 │   │   │   │   ├── RegionPopup.jsx      Interactive map marker popup
 │   │   │   │   ├── RiskLegend.jsx       Color-coded map legend
 │   │   │   │   └── MapControls.jsx      Fullscreen map controls
+│   │   │   ├── EventCard.jsx        Reusable event card component
 │   │   │   ├── SeverityBadge.jsx    Reusable severity level badge with colored bar
 │   ├── services/
 │   │   └── api.js               Axios HTTP client
@@ -96,7 +98,11 @@ Core interactive component serving as the dashboard. Contains three primary sect
 - Anomaly badge: red "Anomaly Detected" or green "Normal Activity"
 - `TESCard`: rich composite card displaying the Threat Escalation Score, Risk Level badge, and visual Risk Meter
 - Trend badge: red "increasing" with up arrow, green "decreasing" with down arrow, neutral "stable" with right arrow
-- Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper, followed by the collapsible `ExplanationPanel`
+- Event list: color-coded cards per article displaying prediction badge, headline, `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a meta-wrapper, followed by the collapsible `ExplanationPanel` and `HybridDecisionPanel`.
+
+### EventCard.jsx
+
+Reusable presentation component for news events. Renders the prediction badge (with an additional "HYBRID OVERRIDE" badge if applicable), the headline, severity, confidence, and incorporates both the `ExplanationPanel` and `HybridDecisionPanel`.
 
 ### Map Components (components/map/)
 
@@ -127,16 +133,13 @@ Displays the classification result for a single text input. Accepts `prediction`
 | protest | 🟠 | PROTEST | Civil unrest or protest activity identified |
 | normal | 🟢 | NORMAL | No significant threat indicators detected |
 
-Renders `SeverityBadge` and `ConfidenceIndicator` side-by-side in a `result-card__meta-wrapper` at the card footer, followed by the collapsible `ExplanationPanel`.
+Renders the prediction badge (which dynamically says "HYBRID DECISION" or "ML PREDICTION"), `SeverityBadge`, and `ConfidenceIndicator` side-by-side in a `result-card__meta-wrapper` at the card footer, followed by the collapsible `ExplanationPanel` and `HybridDecisionPanel`.
 
 Props:
 
 | Prop | Type | Description |
 |---|---|---|
-| `prediction` | `string` | Predicted class label |
-| `confidence` | `float` | Model confidence score (0.0–1.0) |
-| `severity` | `string` | Severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
-| `explanation` | `array` | List of reasoning strings explaining the prediction |
+| `result` | `object` | Full prediction result object containing prediction, confidence, severity, explanation, and hybrid override fields. |
 
 ### ConfidenceIndicator.jsx
 
@@ -185,15 +188,16 @@ Found in `components/intelligence/`, these components replace the legacy `TESBad
 
 Used exclusively in the header section of region cards within the live news dashboard.
 
-### ExplanationPanel.jsx (and related)
+### ExplanationPanel.jsx & HybridDecisionPanel.jsx
 
-Found in `components/intelligence/`, these components visualize the reasoning behind the model's prediction.
+Found in `components/intelligence/`, these components visualize the reasoning behind the model's prediction and the Hybrid Decision Engine's overrides.
 
 - **`ExplanationPanel`**: A collapsible container with a smooth CSS Grid height transition. Toggles the visibility of the explanation list.
 - **`ExplanationList`**: Maps an array of reasoning strings into individual items.
 - **`ExplanationItem`**: Renders a single bullet point.
+- **`HybridDecisionPanel`**: A collapsible container for hybrid overrides detailing the original ML prediction, the reasoning for the override, and lists of matched categories and keywords rendered as UI tags.
 
-Renders gracefully underneath the meta-wrapper in both `ResultCard` and `MainInterface` live news events. Matches the dark glassmorphism aesthetic.
+Renders gracefully underneath the meta-wrapper in both `ResultCard` and `EventCard`. Matches the dark glassmorphism aesthetic.
 
 ---
 

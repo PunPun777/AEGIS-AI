@@ -30,7 +30,9 @@ backend/
 │   └── services/
 │       ├── __init__.py
 │       ├── anomaly_service.py
+│       ├── decision_explainer.py
 │       ├── explanation_service.py
+│       ├── hybrid_decision_service.py
 │       ├── map_service.py
 │       ├── news_service.py
 │       ├── predictor.py
@@ -60,6 +62,10 @@ backend/
 | `RSS_URL` | BBC World RSS feed URL | News ingestion source |
 | `NEWS_LIMIT` | `15` | Maximum articles per fetch |
 | `LABEL_MAP` | `{0: "conflict", 1: "normal", 2: "protest"}` | Model output index to label mapping |
+| `HDE_ML_TRUST_THRESHOLD` | `0.80` | Minimum ML confidence to bypass override |
+| `HDE_CONFLICT_OVERRIDE_SCORE` | `0.40` | Minimum keyword score to trigger conflict override |
+| `HDE_PROTEST_OVERRIDE_SCORE` | `0.35` | Minimum keyword score to trigger protest override |
+| `HDE_DIPLOMACY_DAMPENING_SCORE` | `0.50` | Suppresses conflict override if peace signals are strong |
 
 ### domain_knowledge.py
 
@@ -92,7 +98,7 @@ Public API includes `has_match()`, `match_phrases()`, `match_explanation_groups(
 `app/models/schema.py` defines:
 
 - `TextInput`: Pydantic model with a single `text: str` field. Used as the request body for `POST /predict`.
-- `PredictionResult`: Pydantic model with `prediction: str`, `confidence: float`, `severity: str`, and `explanation: list[str]` fields. Used as the typed response model for `POST /predict`.
+- `PredictionResult`: Pydantic model with `prediction`, `confidence`, `severity`, `explanation`, `original_prediction`, `overridden`, `override_reason`, `matched_categories`, and `matched_keywords`. Used as the typed response model for `POST /predict`.
 - `IntelligenceMapResponse`: Response model for the `/intelligence-map` endpoint. Contains a list of `RegionMapEntry` objects, each holding aggregated metrics (`tes`, `risk_level`, `severity_distribution`, etc.) for geographic display.
 
 ---
@@ -103,20 +109,40 @@ Public API includes `has_match()`, `match_phrases()`, `match_explanation_groups(
 
 **Function**: `predict(text: str) -> dict`
 
-Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Calls `get_severity()` with the resolved prediction label and the original text to produce the severity level. Finally, calls `generate_explanation()` to derive the reasoning string array.
+Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Passes this raw ML prediction to `decide()` in `hybrid_decision_service.py`, which evaluates domain signals and determines if the prediction should be overridden. Calls `get_severity()` with the resolved final prediction label and the original text to produce the severity level. Finally, calls `generate_explanation()` with the `DecisionExplanation` to derive the reasoning string array.
 
 **Returns**:
 
 ```python
 {
     "prediction": "conflict",   # str
-    "confidence": 0.9271,       # float, 0.0–1.0
+    "confidence": 0.6500,       # float, 0.0–1.0
     "severity": "CRITICAL",     # str
     "explanation": [            # list[str]
+        "Moderate missile and projectile terminology detected...",
         "Military terminology detected"
-    ]
+    ],
+    "original_prediction": "normal",
+    "overridden": True,
+    "override_reason": "Moderate missile and projectile terminology detected...",
+    "matched_categories": ["missile", "military"],
+    "matched_keywords": ["missile strike", "military"],
+    "keyword_score": 0.56,
+    "override_score": 0.56
 }
 ```
+
+### hybrid_decision_service.py
+
+**Function**: `decide(text: str, ml_prediction: str, ml_confidence: float) -> HybridDecision`
+
+Implements the Hybrid Decision Engine. If the ML prediction is below `HDE_ML_TRUST_THRESHOLD` (e.g. 0.80), the service scans the text across 18 distinct categories (conflict, protest, and peace dampening). It computes a weighted keyword score (with bonuses for multi-category matches). If the score exceeds thresholds like `HDE_CONFLICT_OVERRIDE_SCORE`, and is not dampened by peace signals, it overrides the ML prediction. Returns a `HybridDecision` dataclass containing the final prediction, original prediction, override flag, and a rich `DecisionExplanation`.
+
+### decision_explainer.py
+
+**Function**: `build(...) -> DecisionExplanation`
+
+Produces structured reasoning for every branch of the Hybrid Decision Engine. It dynamically formats analyst-grade sentences (e.g., "Moderate military deployment terminology detected...") and packages the matched categories, keywords, and numeric scores into a reusable `DecisionExplanation` object consumed by the frontend `HybridDecisionPanel`.
 
 ### explanation_service.py
 
