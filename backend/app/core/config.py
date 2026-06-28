@@ -92,3 +92,6 @@ HDE_CONTEXT_WEIGHTS: dict[str, int] = {
 # second-highest context for the contrast sentence to be included.
 HDE_DOMINANT_CONTRAST_THRESHOLD: int = 4
 
+# ── Diagnostics ────────────────────────────────────────────────────────────
+
+DEBUG_INTELLIGENCE: bool = False
