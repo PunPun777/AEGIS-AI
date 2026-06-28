@@ -10,3 +10,5 @@ const API = axios.create({
 export const predictText = (text) => API.post("/predict", { text });
 
 export const fetchNewsAnalysis = () => API.get("/news-analysis");
+
+export const fetchIntelligenceMap = () => API.get("/intelligence-map");

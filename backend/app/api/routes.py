@@ -1,11 +1,12 @@
 from fastapi import APIRouter
-from app.models.schema import TextInput, PredictionResult
+from app.models.schema import TextInput, PredictionResult, IntelligenceMapResponse
 from app.services.predictor import predict
 from app.services.news_service import fetch_news
 from app.services.region_service import get_region
 from app.services.tes_service import calculate_tes, get_tes_result
 from app.services.anomaly_service import detect_anomaly
 from app.services.trend_service import get_trend
+from app.services.map_service import build_intelligence_map
 
 router = APIRouter()
 
@@ -46,3 +47,9 @@ def analyze_news():
         }
 
     return output
+
+
+@router.get("/intelligence-map", response_model=IntelligenceMapResponse)
+def get_intelligence_map():
+    regions = build_intelligence_map()
+    return {"regions": regions}

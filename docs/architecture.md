@@ -23,7 +23,9 @@ Anomaly Detection (threshold check)
     |
 Trend Analysis (temporal comparison)
     |
-React Dashboard (visualization)
+Intelligence Aggregation (/intelligence-map)
+    |
+React Dashboard (Vite) + Geographic Map (Leaflet)
 ```
 
 ---
@@ -47,6 +49,7 @@ app/
     ├── predictor.py       NLP inference, confidence scoring, severity assignment
     ├── severity_service.py Rule-based event severity classification
     ├── explanation_service.py Generates human-readable reasoning for predictions
+    ├── map_service.py     Aggregates regional intelligence for map visualizations
     ├── news_service.py    RSS feed ingestion
     ├── region_service.py  Geographic region extraction
     ├── tes_service.py     Confidence- and severity-weighted TES calculation
@@ -60,7 +63,7 @@ app/
 Defines HTTP endpoints. Orchestrates calls to the services layer. Contains no business logic.
 
 **Services Layer** (`services/`):
-Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` calls `severity_service.py` and `explanation_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score.
+Contains all business logic. Each service is a standalone module with a single responsibility. `predictor.py` calls `severity_service.py` and `explanation_service.py` to enrich its output. `tes_service.py` consumes the enriched event dict (including `confidence` and `severity`) to compute the weighted score. `map_service.py` aggregates regional intelligence for the map endpoints.
 
 **ML Layer** (`ml/model_loader.py`):
 Loads the DistilBERT model and tokenizer at startup. Exports module-level `model` and `tokenizer` objects consumed by the predictor service.
@@ -69,7 +72,7 @@ Loads the DistilBERT model and tokenizer at startup. Exports module-level `model
 Stores constants: model path, RSS URL, news limit, label map. All services import configuration from this single source.
 
 **Schema Layer** (`models/schema.py`):
-Defines Pydantic models for request validation and response serialization. Includes `TextInput` (request) and `PredictionResult` (response with `prediction`, `confidence`, `severity`, and `explanation`).
+Defines Pydantic models for request validation and response serialization. Includes `TextInput` (request) and `PredictionResult` (response with `prediction`, `confidence`, `severity`, and `explanation`), as well as `IntelligenceMapResponse` and `RegionMapEntry`.
 
 ---
 
@@ -84,7 +87,12 @@ src/
 ├── pages/
 │   └── Home.jsx             Page shell: header, hero, footer
 ├── components/
-│   ├── MainInterface.jsx    Primary interface: text input + live news dashboard
+│   ├── MainInterface.jsx    Primary interface: intelligence map + text analysis + live news
+│   ├── map/                 Geographic map components (Leaflet)
+│   │   ├── IntelligenceMap.jsx
+│   │   ├── RegionPopup.jsx
+│   │   ├── RiskLegend.jsx
+│   │   └── MapControls.jsx
 │   ├── intelligence/        Explainable Intelligence & TES UI
 │   │   ├── ExplanationPanel.jsx
 │   │   ├── ExplanationList.jsx
@@ -97,9 +105,10 @@ src/
 │   ├── ConfidenceIndicator.jsx  Reusable confidence percentage and progress bar
 │   └── SeverityBadge.jsx    Reusable severity level badge with colored bar
 ├── services/
-│   └── api.js               Axios client (predictText, fetchNewsAnalysis)
+│   └── api.js               Axios client (predictText, fetchNewsAnalysis, fetchIntelligenceMap)
 └── styles/
-    └── App.css              Global design system (dark glassmorphism theme)
+    ├── App.css              Global design system (dark glassmorphism theme)
+    └── map.css              Intelligence map styling
 ```
 
 ### Component Hierarchy

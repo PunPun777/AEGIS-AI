@@ -171,6 +171,14 @@ Maintains an in-memory dictionary mapping region names to their previous TES val
 
 The previous value is updated after each comparison. State is lost on server restart.
 
+### 11. Intelligence Aggregation (Map Endpoint)
+
+**Service**: `map_service.py`
+**Input**: Live grouped regions and events
+**Output**: List of stripped, flattened region dictionaries
+
+When the `/intelligence-map` endpoint is hit, the pipeline delegates to the standard flow up to Trend Analysis, but instead of returning the full list of raw news events, it strips them down and calculates map-specific metrics: `event_count`, `confidence_average` (mean confidence), and `severity_distribution` (a dictionary tallying how many events fell into each severity category). The array is sorted by `risk_score` descending.
+
 ---
 
 ## Output Structure
@@ -226,6 +234,17 @@ fetch_news()
     |
     v
 { region: { TES, risk_score, risk_level, anomaly, trend, events } }
+    |
+    |--- Branch based on endpoint:
+    |
+    |--- GET /news-analysis
+    |       -> Return direct object structure
+    |
+    |--- GET /intelligence-map (via map_service.py)
+            -> Calculate: confidence_average, severity_distribution, event_count
+            -> Strip events array
+            -> Format as list sorted by risk_score descending
+            -> Return { regions: [...] }
 ```
 
 ---

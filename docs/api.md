@@ -234,6 +234,57 @@ TES = average(event_score) over all events in the region
 
 ---
 
+### GET /intelligence-map
+
+Fetch aggregated regional intelligence optimized for geographic map visualizations. Strips detailed event arrays in favor of lightweight high-level metrics.
+
+#### Request
+
+No request body. No query parameters.
+
+#### Response
+
+Returns a JSON object with a single `regions` array containing region metadata.
+
+| Field | Type | Description |
+|---|---|---|
+| `region` | `string` | The geographic region name |
+| `risk_level` | `string` | Categorical risk level (`"LOW"`, `"MODERATE"`, `"HIGH"`, `"CRITICAL"`) |
+| `risk_score` | `float` | Duplicate of TES for frontend metric mapping |
+| `tes` | `float` | Confidence- and severity-weighted Threat Escalation Score |
+| `trend` | `string` | Temporal trend: `"increasing"`, `"decreasing"`, or `"stable"` |
+| `anomaly` | `boolean` | Whether the region exceeds the anomaly threshold |
+| `event_count` | `integer` | Number of events analyzed for this region |
+| `confidence_average` | `float` | Mean confidence across all events in this region |
+| `severity_distribution` | `object` | Dictionary containing a count of events per severity level (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) |
+
+#### Example Response
+
+```json
+{
+  "regions": [
+    {
+      "region": "Middle East",
+      "risk_level": "CRITICAL",
+      "risk_score": 1.2164,
+      "tes": 1.2164,
+      "trend": "increasing",
+      "anomaly": true,
+      "event_count": 3,
+      "confidence_average": 0.8752,
+      "severity_distribution": {
+        "LOW": 1,
+        "MEDIUM": 0,
+        "HIGH": 1,
+        "CRITICAL": 1
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## Risk Level Reference
 
 The backend computes the categorical `risk_level` from the numeric TES value using these thresholds:

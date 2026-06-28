@@ -84,23 +84,26 @@
 
 ---
 
-## Phase 5.3 — Planned
+## Phase 6 — Completed
 
-- Interactive geographic visualization (Leaflet.js)
-- Map-based region display with risk overlays
-- Alert system for anomaly notifications
-
----
-
-## Phase 6 — Planned
-
-- Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)
-- Named Entity Recognition for region and actor extraction
-- Persistent storage for historical trend data
+- Interactive geographic visualization (Leaflet.js & React-Leaflet)
+- Map-based region display with color-coded risk overlays
+- Geographic Intelligence Map API endpoint (`/intelligence-map`) for aggregated data
+- Map popups containing TES, risk levels, and severity distribution
+- Map dashboard layout with responsive dual-pane structure
 
 ---
 
 ## Phase 7 — Planned
+
+- Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)
+- Named Entity Recognition for region and actor extraction
+- Alert system for anomaly notifications
+- Persistent storage for historical trend data
+
+---
+
+## Phase 8 — Planned
 
 - Model hosting via Hugging Face Hub
 - Containerization (Docker)
