@@ -90,17 +90,17 @@ def _ml_evidence_score(ml_prediction: str, ml_confidence: float) -> float:
     return round(ml_confidence * base, 4)
 
 
-def _conflict_domain_score(text: str) -> tuple[float, int, list[str]]:
+def _conflict_domain_score(text: str) -> tuple[float, int, list[str], dict[str, float]]:
     raw_scores = score_categories(text, _CONFLICT_CATEGORY_MAP)
     active_cats = {cat: sc for cat, sc in raw_scores.items() if sc > 0}
     indicator_count = len(active_cats)
     if not active_cats:
-        return 0.0, 0, []
+        return 0.0, 0, [], {}
     peak_cat = max(active_cats, key=lambda c: active_cats[c] * HDE_CATEGORY_WEIGHTS.get(c, 1.0))
     peak = active_cats[peak_cat] * HDE_CATEGORY_WEIGHTS.get(peak_cat, 1.0)
     boost = min(0.30, (indicator_count - 1) * 0.06)
     score = round(min(1.0, peak + boost), 4)
-    return score, indicator_count, list(active_cats.keys())
+    return score, indicator_count, list(active_cats.keys()), dict(active_cats)
 
 
 def _protest_domain_score(text: str) -> tuple[float, int, list[str]]:
@@ -145,7 +145,7 @@ def decide(
 ) -> HybridDecision:
     ml_score = _ml_evidence_score(ml_prediction, ml_confidence)
 
-    conflict_score, conflict_indicators, conflict_cats = _conflict_domain_score(text)
+    conflict_score, conflict_indicators, conflict_cats, cat_scores = _conflict_domain_score(text)
     protest_score, protest_indicators, protest_kws = _protest_domain_score(text)
     peace = _peace_score(text)
     margin = _required_margin(ml_confidence)
@@ -165,6 +165,7 @@ def decide(
                 conflict_score=conflict_score,
                 ml_score=ml_score,
                 conflict_categories=conflict_cats,
+                category_scores=cat_scores,
                 conflict_indicators=conflict_indicators,
                 conflict_category_map=_CONFLICT_CATEGORY_MAP,
             )
@@ -184,6 +185,7 @@ def decide(
                 conflict_score=conflict_score,
                 ml_score=ml_score,
                 conflict_categories=conflict_cats,
+                category_scores=cat_scores,
                 peace_score=peace,
                 conflict_category_map=_CONFLICT_CATEGORY_MAP,
             )
@@ -226,6 +228,7 @@ def decide(
         conflict_score=conflict_score,
         ml_score=ml_score,
         conflict_categories=conflict_cats,
+        category_scores=cat_scores,
         peace_score=peace,
     )
     return HybridDecision(

@@ -64,3 +64,31 @@ HDE_CATEGORY_WEIGHTS: dict[str, float] = {
     "economy":    0.5,
     "disaster":   0.5,
 }
+
+# Integer geopolitical context weights used by the contextual explanation engine.
+# Determines which context is dominant when multiple category groups match.
+HDE_CONTEXT_WEIGHTS: dict[str, int] = {
+    "missile":    10,
+    "airstrike":  10,
+    "terrorism":  10,
+    "nuclear":    10,
+    "military":   8,
+    "shelling":   8,
+    "conflict":   8,
+    "insurgency": 7,
+    "coup":       7,
+    "weapon":     7,
+    "naval":      6,
+    "cyber":      6,
+    "casualty":   6,
+    "border":     5,
+    "protest":    9,
+    "diplomacy":  3,
+    "economy":    2,
+    "disaster":   2,
+}
+
+# Minimum weighted-score lead the dominant context must hold over the
+# second-highest context for the contrast sentence to be included.
+HDE_DOMINANT_CONTRAST_THRESHOLD: int = 4
+

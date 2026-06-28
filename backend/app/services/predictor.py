@@ -29,8 +29,10 @@ def predict(text: str) -> dict:
         "original_prediction": decision.original_prediction,
         "overridden":          decision.overridden,
         "override_reason":     decision.override_reason,
+        "dominant_category":   expl.dominant_category,
         "matched_categories":  expl.matched_categories,
         "matched_keywords":    expl.matched_keywords,
         "keyword_score":       expl.keyword_score,
         "override_score":      expl.override_score,
+        "category_scores":     expl.category_scores,
     }
