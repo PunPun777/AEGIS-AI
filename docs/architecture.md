@@ -11,7 +11,7 @@ NLP Classification (DistilBERT)
     |
 Signal Confidence (softmax)
     |
-  Hybrid Decision Engine (Keyword Override)
+  Hybrid Decision Engine (Evidence Scoring)
     |
   Event Severity (using Domain Knowledge & Keyword Matcher)
       |
@@ -43,6 +43,7 @@ app/
 │   └── routes.py         HTTP endpoint definitions
 ├── core/
 │   ├── config.py             Centralized configuration constants
+│   ├── diagnostics.py        Internal decision pipeline visibility 
 │   ├── domain_knowledge.py   Geopolitical vocabulary and categories
 │   └── keyword_matcher.py    Reusable keyword matching engine
 ├── ml/
@@ -51,8 +52,8 @@ app/
 │   └── schema.py         Pydantic request/response schemas
 └── services/
     ├── predictor.py       NLP inference, confidence scoring, severity assignment
-    ├── hybrid_decision_service.py Overrides low-confidence ML predictions
-    ├── decision_explainer.py Generates structured reasoning for hybrid decisions
+    ├── hybrid_decision_service.py Aggregates ML and domain evidence to determine final prediction
+    ├── decision_explainer.py Generates geopolitically-weighted reasoning for hybrid decisions
     ├── severity_service.py Rule-based event severity classification
     ├── explanation_service.py Generates human-readable reasoning for predictions
     ├── map_service.py     Aggregates regional intelligence for map visualizations
@@ -104,6 +105,8 @@ src/
 │   │   ├── ExplanationPanel.jsx
 │   │   ├── ExplanationList.jsx
 │   │   ├── ExplanationItem.jsx
+│   │   ├── HybridDecisionPanel.jsx
+│   │   ├── DiagnosticsPanel.jsx
 │   │   ├── RiskBadge.jsx
 │   │   ├── MainInterface.jsx    Primary dashboard: text analysis + live news
 │   ├── EventCard.jsx        Reusable event card displaying intelligence metrics
@@ -140,6 +143,7 @@ App
     │           ├── Trend Badge
     │           └── Event Cards (EventCard)
     │               ├── HybridDecisionPanel
+    │               ├── DiagnosticsPanel
     │               ├── SeverityBadge
     │               ├── ConfidenceIndicator
     │               └── ExplanationPanel

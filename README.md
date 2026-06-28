@@ -19,7 +19,7 @@ RSS Feed (BBC World)
       |
   Signal Confidence (softmax)
       |
-  Hybrid Decision Engine (Keyword Override)
+  Hybrid Decision Engine (Evidence Scoring)
       |
   Explainable Intelligence & Severity (via keyword_matcher)
       |
@@ -50,8 +50,9 @@ RSS Feed (BBC World)
 - DistilBERT-based event classification (conflict / protest / normal)
 - Signal confidence scoring derived from model logits via softmax
 - Geopolitical Domain Intelligence Layer: Centralized, comprehensive geopolitical vocabulary covering 21+ categories
-- Hybrid Decision Engine: Intelligently overrides low-confidence ML predictions when strong domain signals (e.g., conflict or protest keywords) are present, calculating weighted category scores.
+- Hybrid Decision Engine: Intelligently aggregates ML and domain evidence (weighted category scoring) to decide whether to retain or override predictions, removing previous confidence-first bypass logic.
 - Intelligent Keyword Matcher: Reusable matching engine featuring longest-phrase priority, covered-span deduplication, and compound phrase support
+- Diagnostics Mode: Built-in developer visibility exposing the internal decision and evidence-scoring process.
 - Rule-based event severity classification (LOW / MEDIUM / HIGH / CRITICAL) using domain knowledge
 - Explainable Intelligence: Modular reasoning generation for model predictions and hybrid overrides
 - Confidence- and severity-weighted Threat Escalation Score (TES) per region
@@ -71,7 +72,8 @@ RSS Feed (BBC World)
 - Interactive Map popups with TES, risk metrics, severity distribution, and average confidence
 - Color-coded event classification cards and map regions
 - Hybrid Decision Panel: Collapsible UI detailing AI overrides, matched categories, and matched keywords
-- Explainable Intelligence: Collapsible reasoning panel detailing why a prediction was made
+- Diagnostics Panel: Collapsible developer UI exposing internal ML vs domain evidence scores and decision rationale
+- Explainable Intelligence: Collapsible reasoning panel detailing why a prediction was made with geopolitically weighted context
 - Real-time loading states, error handling, and map fullscreen controls
 
 ---
@@ -120,12 +122,16 @@ Classify a single text input.
   "original_prediction": "conflict",
   "overridden": false,
   "override_reason": "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
+  "dominant_category": "missile",
   "matched_categories": [],
   "matched_keywords": [],
   "keyword_score": 0.0,
-  "override_score": 0.0
+  "override_score": 0.0,
+  "category_scores": {}
 }
 ```
+
+> **Note**: Setting `DEBUG_INTELLIGENCE=True` in `config.py` injects a `_diagnostics` block into the response exposing internal evidence scores.
 
 ### GET /news-analysis
 
@@ -153,10 +159,12 @@ Fetch and analyze live news. Returns region-grouped intelligence with detailed e
         "original_prediction": "conflict",
         "overridden": false,
         "override_reason": "Prediction retained because ML confidence (98.1%) exceeded the override threshold (80%). Domain signals were not evaluated.",
+        "dominant_category": "missile",
         "matched_categories": [],
         "matched_keywords": [],
         "keyword_score": 0.0,
-        "override_score": 0.0
+        "override_score": 0.0,
+        "category_scores": {}
       }
     ]
   }

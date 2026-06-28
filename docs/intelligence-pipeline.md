@@ -46,12 +46,12 @@ Confidence is produced as part of the prediction result and propagated through a
 **Input**: Text string, ML prediction string, ML confidence float
 **Output**: `HybridDecision` dataclass containing final prediction, original prediction, override flags, and structured `DecisionExplanation`.
 
-Evaluates whether to override a low-confidence ML prediction based on domain rules.
-- **Trusted ML**: If `confidence >= 0.80`, the ML prediction is trusted without scanning for keywords.
-- **Conflict Override**: Scans the text for conflict indicators across 14 categories. If the weighted score > 0.40 and is not dampened by peace signals, it overrides non-conflict predictions to `conflict`.
-- **Protest Override**: Scans for protest indicators. If score > 0.35, overrides non-protest predictions to `protest`.
+Evaluates whether to override the ML prediction based on domain rules by aggregating evidence.
+- **ML Evidence**: Calculates an `ml_evidence_score` by multiplying the ML confidence by a base weight for its class.
+- **Domain Evidence**: Calculates a `domain_evidence_score` by scoring the text against geopolitical categories (e.g. missile, conflict, protest) and applying predefined category weights.
+- **Evidence Comparison**: If the domain evidence strongly outweighs the ML evidence (by a configured margin), the prediction is overridden.
 
-Produces structured reasoning detailing exactly why a decision was kept or overridden, including the matched categories and phrases.
+Produces structured reasoning detailing exactly why a decision was kept or overridden, including the matched categories, the `dominant_category`, and numeric `category_scores`.
 
 ### 5. Event Severity
 
@@ -79,7 +79,7 @@ Severity is propagated through all downstream stages. `tes_service.py` consumes 
 
 Delegates to `keyword_matcher.match_explanation_groups()` to scan the text for predefined keyword groups mapped to the prediction class. Generates reusable explanation sentences (e.g., "Missile or projectile terminology detected"). Uses longest-phrase priority to accurately parse compound expressions like "exchange of fire" without leaking internal rules or heuristics.
 
-If a `DecisionExplanation` was provided by the Hybrid Decision Engine, its structured prose reasoning is prepended as the first explanation sentence so analysts can immediately see the rationale behind the AI's final decision.
+If a `DecisionExplanation` was provided by the Hybrid Decision Engine, its structured prose reasoning is prepended as the first explanation sentence so analysts can immediately see the rationale behind the AI's final decision. The explanation list is then sorted so that the `dominant_category` appears first, suppressing less relevant signals.
 
 ### 7. Region Extraction
 
@@ -117,6 +117,7 @@ After classification, explanation, and region extraction, events are grouped int
     "severity": "CRITICAL",
     "overridden": True,
     "override_reason": "...",
+    "dominant_category": "missile",
     "explanation": [
         "..."
     ]
@@ -223,6 +224,7 @@ The pipeline produces a JSON object keyed by region:
         "overridden": true,
         "confidence": 0.6500,
         "severity": "CRITICAL",
+        "dominant_category": "military",
         "explanation": [
           "Military terminology detected"
         ]

@@ -108,6 +108,17 @@
 
 ---
 
+## Phase 6.6 — Completed
+
+- Hybrid Intelligence Engine refactored to an evidence-based model, completely replacing confidence-first bypass logic
+- Weighted category scoring replacing flat thresholds
+- Geopolitical context weighting using dominant category resolution
+- Diagnostics mode (`DEBUG_INTELLIGENCE`) exposing ML vs Domain internal evidence scores
+- Contextual Explanation Engine dynamically sorting analysis reasoning by dominant category
+- Diagnostics Developer Panel added to frontend
+
+---
+
 ## Phase 7 — Planned
 
 - Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)

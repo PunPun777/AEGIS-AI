@@ -35,7 +35,10 @@ Classify a single text input into a geopolitical event category. Returns the pre
   "matched_categories": ["string"],
   "matched_keywords": ["string"],
   "keyword_score": 0.0,
-  "override_score": 0.0
+  "override_score": 0.0,
+  "dominant_category": "string",
+  "category_scores": {"string": 0.0},
+  "_diagnostics": {} // Included only if DEBUG_INTELLIGENCE is True
 }
 ```
 
@@ -52,6 +55,9 @@ Classify a single text input into a geopolitical event category. Returns the pre
 | `matched_keywords` | `array` | List of specific matched keywords/phrases |
 | `keyword_score` | `float` | Numeric strength of the domain signal |
 | `override_score` | `float` | The score that triggered the override (`0.0` if not overridden) |
+| `dominant_category` | `string` | The geopolitical context that contributed the most weight to the domain score |
+| `category_scores` | `object` | Dictionary of matched categories and their individual calculated scores |
+| `_diagnostics` | `object` | Internal trace of the Evidence Decision pipeline (only present if `DEBUG_INTELLIGENCE` is `True`) |
 
 #### Examples
 
@@ -80,7 +86,10 @@ Response:
   "matched_categories": [],
   "matched_keywords": [],
   "keyword_score": 0.0,
-  "override_score": 0.0
+  "override_score": 0.0,
+  "dominant_category": "missile",
+  "category_scores": {},
+  "_diagnostics": {}
 }
 ```
 
@@ -107,7 +116,9 @@ Response:
   "matched_categories": ["missile", "military"],
   "matched_keywords": ["missile barrage", "military"],
   "keyword_score": 0.26,
-  "override_score": 0.26
+  "override_score": 0.26,
+  "dominant_category": "missile",
+  "category_scores": {"missile": 0.16, "military": 0.10}
 }
 ```
 
@@ -206,6 +217,9 @@ Each event in the `events` array:
 | `severity` | `string` | Rule-based severity level: `"LOW"`, `"MEDIUM"`, `"HIGH"`, or `"CRITICAL"` |
 | `explanation` | `array` | List of reasoning strings explaining the prediction |
 | `overridden` | `boolean` | `true` if the Hybrid Decision Engine overrode the ML prediction |
+| `dominant_category` | `string` | Dominant geopolitical context category |
+| `category_scores` | `object` | Numeric domain scores broken down by category |
+| `_diagnostics` | `object` | Internal pipeline decision trace (only included if `DEBUG_INTELLIGENCE` is True) |
 
 #### TES Calculation
 
