@@ -75,12 +75,39 @@
 
 ## Phase 5.5 — Completed
 
-- Explainable Intelligence: modular, rule-based reasoning generation explaining model decisions
-- Created `explanation_service.py` to decouple keyword/heuristics logic from model inference
-- Mapped explicit keyword clusters to human-readable explanation strings per prediction class
-- Integrated `explanation: list[str]` into the prediction pipeline and API responses
-- Created reusable React UI components (`ExplanationPanel.jsx`, `ExplanationList.jsx`, `ExplanationItem.jsx`)
-- Upgraded intelligence dashboard to display collapsible reasoning sections per event without layout shift
+- Domain Intelligence Engine (`domain_knowledge.py`)
+- Geopolitical keyword analysis
+- Centralized vocabulary covering 21+ categories
+- Rule-based domain scoring and intelligent keyword matcher
+
+---
+
+## Phase 5.6 — Completed
+
+- Hybrid Intelligence Decision Engine (`hybrid_decision_service.py`)
+- Confidence-aware decision logic completely replacing confidence-first bypass logic
+- Domain vs ML comparison via weighted category scoring
+- Explainable hybrid reasoning dynamically sorting analysis reasoning by dominant category
+- Diagnostics mode (`DEBUG_INTELLIGENCE`) exposing ML vs Domain internal evidence scores
+- Diagnostics Developer Panel added to frontend
+- Decision stabilization
+
+---
+
+## Phase 5.7 — Intelligence Model V2 (Active)
+
+**Motivation**: Testing demonstrated that the Hybrid Decision Engine functions correctly. However, the original DistilBERT model frequently predicts the "normal" class with extremely high confidence for many geopolitical headlines. The limitation is now the trained model rather than the backend architecture.
+
+- Expanded geopolitical dataset
+- Improved dataset balancing
+- Richer geopolitical labels
+- Improved preprocessing
+- Better evaluation metrics
+- Precision / Recall / F1 evaluation
+- Confusion Matrix
+- Retrained DistilBERT
+- Improved conflict recognition
+- Better hybrid decision support
 
 ---
 
@@ -91,20 +118,6 @@
 - Geographic Intelligence Map API endpoint (`/intelligence-map`) for aggregated data
 - Map popups containing TES, risk levels, and severity distribution
 - Map dashboard layout with responsive dual-pane structure
-
----
-
-## Phase 6.5 — Completed
-
-- Geopolitical Domain Intelligence Layer (`domain_knowledge.py`)
-- Centralized vocabulary covering 21+ categories (conflict, protest, nuclear, cyber, etc.)
-- Extended region extraction covering 8 major geopolitical zones
-- Intelligent Keyword Matcher (`keyword_matcher.py`) with longest-phrase priority, compound matching, and category scoring
-- Hybrid Decision Engine (`hybrid_decision_service.py`) to override low-confidence ML predictions with domain-specific rule evaluation
-- Explainable Intelligence 2.0 (`decision_explainer.py`) producing structured reasoning with matched categories and keywords
-- Refactored `severity_service.py` and `explanation_service.py` to use centralized vocabulary and matcher
-- Frontend dashboard updated with `HybridDecisionPanel` and `EventCard` components to expose AI overrides
-- Prepared shared intelligence architecture for future Multi-source OSINT and NER integration
 
 ---
 

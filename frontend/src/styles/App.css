@@ -1285,3 +1285,65 @@ body {
 .risk-meter--moderate .risk-meter__fill { background: #facc15; box-shadow: 0 0 8px #facc15; }
 .risk-meter--high .risk-meter__fill { background: #f97316; box-shadow: 0 0 8px #f97316; }
 .risk-meter--critical .risk-meter__fill { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+/* ── Diagnostics Panel ───────────────────────────────────────── */
+.diagnostics-panel {
+  border-top-color: rgba(250, 204, 21, 0.15);
+}
+
+.diagnostics-toggle {
+  color: #facc15;
+}
+
+.diagnostics-content-inner {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px dashed rgba(250, 204, 21, 0.2);
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diagnostics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.diagnostic-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diagnostic-label {
+  font-size: 0.65rem;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.diagnostic-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.diagnostic-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+}
+
+.diagnostic-reason {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+

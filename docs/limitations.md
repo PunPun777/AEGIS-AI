@@ -14,6 +14,7 @@
 - Keyword dependency in classification
 - Weak contextual understanding for nuanced geopolitical language
 - Struggles with edge cases and ambiguous text
+- **Over-prediction of "normal"**: The V1 three-class model frequently predicts the "normal" class with extremely high confidence for complex headlines, limiting the Domain Intelligence Layer.
 - Confidence scores are not calibrated; softmax probabilities from a heuristically-labeled model tend to skew toward high confidence regardless of true certainty
 
 ---
@@ -67,7 +68,9 @@
 
 ## Mitigation Plan
 
-- Train on real geopolitical datasets (GDELT, ACLED event data)
+- **Phase 5.7: Intelligence Model V2** (Active)
+  - Train on real geopolitical datasets (e.g. GDELT, ACLED event data) with richer labels
+  - Re-balance the dataset to fix the over-prediction of the "normal" class
 - Apply confidence calibration (temperature scaling, Platt scaling)
 - Replace rule-based severity with a learned severity classifier trained on labeled event data
 - Incorporate confidence and severity weighting into TES calculation

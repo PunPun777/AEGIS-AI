@@ -71,8 +71,8 @@ The current implementation includes:
 
 AEGIS-AI aims to evolve into a full intelligence platform with:
 
+- **Intelligence Model V2**: Retrained DistilBERT on expanded, balanced geopolitical datasets with richer labels (replacing the original 3-class V1 model)
 - Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)
 - Named Entity Recognition (NER) for region and actor extraction
-- Interactive geographic visualization (Leaflet.js)
 - Persistent storage and historical analysis
 - Cloud deployment and model hosting

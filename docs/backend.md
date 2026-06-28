@@ -19,6 +19,7 @@ backend/
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── config.py
+│   │   ├── diagnostics.py
 │   │   ├── domain_knowledge.py
 │   │   └── keyword_matcher.py
 │   ├── ml/
@@ -62,10 +63,11 @@ backend/
 | `RSS_URL` | BBC World RSS feed URL | News ingestion source |
 | `NEWS_LIMIT` | `15` | Maximum articles per fetch |
 | `LABEL_MAP` | `{0: "conflict", 1: "normal", 2: "protest"}` | Model output index to label mapping |
-| `HDE_ML_TRUST_THRESHOLD` | `0.80` | Minimum ML confidence to bypass override |
-| `HDE_CONFLICT_OVERRIDE_SCORE` | `0.40` | Minimum keyword score to trigger conflict override |
-| `HDE_PROTEST_OVERRIDE_SCORE` | `0.35` | Minimum keyword score to trigger protest override |
-| `HDE_DIPLOMACY_DAMPENING_SCORE` | `0.50` | Suppresses conflict override if peace signals are strong |
+| `HDE_PREDICTION_BASE_WEIGHT` | `{ "conflict": 1.0, ... }` | Base weight applied to ML confidence |
+| `HDE_OVERRIDE_MARGIN` | `0.12` | Margin required to override ML prediction |
+| `HDE_CATEGORY_WEIGHTS` | `{ "missile": 1.0, ... }` | Multipliers for domain signal strength |
+| `HDE_CONTEXT_WEIGHTS` | `{ "missile": 10, ... }` | Integer weights for dominant context ranking |
+| `DEBUG_INTELLIGENCE` | `False` | Enables diagnostic trace output in API responses |
 
 ### domain_knowledge.py
 
@@ -109,7 +111,7 @@ Public API includes `has_match()`, `match_phrases()`, `match_explanation_groups(
 
 **Function**: `predict(text: str) -> dict`
 
-Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Passes this raw ML prediction to `decide()` in `hybrid_decision_service.py`, which evaluates domain signals and determines if the prediction should be overridden. Calls `get_severity()` with the resolved final prediction label and the original text to produce the severity level. Finally, calls `generate_explanation()` with the `DecisionExplanation` to derive the reasoning string array.
+Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Applies softmax over the raw model logits to produce a probability distribution across all classes. The class with the highest probability is selected; its index is mapped to a label string via `LABEL_MAP`, and its probability value is extracted as the confidence score. Passes this raw ML prediction to `decide()` in `hybrid_decision_service.py`, which aggregates domain signals and computes the final evidence-based prediction. Calls `get_severity()` with the resolved final prediction label and the original text to produce the severity level. Finally, calls `generate_explanation()` with the `DecisionExplanation` to derive the geopolitically-weighted reasoning string array. Also conditionally attaches a `_diagnostics` object via `build_diagnostics()` if `DEBUG_INTELLIGENCE` is enabled.
 
 **Returns**:
 
@@ -125,10 +127,12 @@ Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Appl
     "original_prediction": "normal",
     "overridden": True,
     "override_reason": "Moderate missile and projectile terminology detected...",
+    "dominant_category": "missile",
     "matched_categories": ["missile", "military"],
     "matched_keywords": ["missile strike", "military"],
     "keyword_score": 0.56,
-    "override_score": 0.56
+    "override_score": 0.56,
+    "category_scores": {"missile": 0.36, "military": 0.20}
 }
 ```
 
@@ -136,19 +140,19 @@ Tokenizes input text and runs DistilBERT inference under `torch.no_grad()`. Appl
 
 **Function**: `decide(text: str, ml_prediction: str, ml_confidence: float) -> HybridDecision`
 
-Implements the Hybrid Decision Engine. If the ML prediction is below `HDE_ML_TRUST_THRESHOLD` (e.g. 0.80), the service scans the text across 18 distinct categories (conflict, protest, and peace dampening). It computes a weighted keyword score (with bonuses for multi-category matches). If the score exceeds thresholds like `HDE_CONFLICT_OVERRIDE_SCORE`, and is not dampened by peace signals, it overrides the ML prediction. Returns a `HybridDecision` dataclass containing the final prediction, original prediction, override flag, and a rich `DecisionExplanation`.
+Implements the Evidence-Based Hybrid Decision Engine. The service ALWAYS scans the text across 18 distinct categories (conflict, protest, and peace dampening) regardless of ML confidence. It calculates an `ml_evidence_score` based on base weights and confidence, and a `domain_evidence_score` via the `keyword_matcher`. It compares the scores to determine if an override is warranted. Returns a `HybridDecision` dataclass containing the final prediction, original prediction, override flag, and a rich `DecisionExplanation` containing `dominant_category` and `category_scores`.
 
 ### decision_explainer.py
 
 **Function**: `build(...) -> DecisionExplanation`
 
-Produces structured reasoning for every branch of the Hybrid Decision Engine. It dynamically formats analyst-grade sentences (e.g., "Moderate military deployment terminology detected...") and packages the matched categories, keywords, and numeric scores into a reusable `DecisionExplanation` object consumed by the frontend `HybridDecisionPanel`.
+Produces structured reasoning for every branch of the Hybrid Decision Engine. It determines the `dominant_category` based on predefined geopolitical weighting (`HDE_CONTEXT_WEIGHTS`), dynamically formats analyst-grade contrast sentences, and packages the matched categories, keywords, and numeric scores into a reusable `DecisionExplanation` object consumed by the frontend `DiagnosticsPanel` and `HybridDecisionPanel`.
 
 ### explanation_service.py
 
 **Function**: `generate_explanation(text: str, prediction: str) -> list[str]`
 
-Implements modular, rule-based reasoning generation. Delegates to `keyword_matcher.match_explanation_groups()` to scan the text against predefined explanation groups imported from `domain_knowledge.py`. Automatically supports multi-word expressions and longest-phrase priority. Each matching group appends a human-readable analyst sentence to the list (e.g., "Missile or projectile terminology detected"). If no groups match, falls back to a generic explanation string for that class. Keeps inference and keyword logic strictly decoupled.
+Implements modular, rule-based reasoning generation. Delegates to `keyword_matcher.match_explanation_groups()` to scan the text for predefined explanation groups imported from `domain_knowledge.py`. It uses the `dominant_category` from the `DecisionExplanation` to sort and rank explanation sentences, ensuring the most geopolitically significant context appears first and suppresses irrelevant signals. If no groups match, it falls back to a generic explanation string for that class.
 
 ### severity_service.py
 

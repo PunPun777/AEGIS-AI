@@ -12,32 +12,38 @@ LABEL_MAP = {
 
 # ── Hybrid Decision Engine ─────────────────────────────────────────────────
 
-# Minimum ML confidence above which the ML prediction is never overridden
-HDE_ML_TRUST_THRESHOLD: float = 0.80
+# Base weight multiplied by ML confidence to produce the ML evidence score.
+# Reflects how much inherent domain signal each ML class already implies.
+HDE_PREDICTION_BASE_WEIGHT: dict[str, float] = {
+    "conflict": 1.0,
+    "protest":  0.7,
+    "normal":   0.4,
+}
 
-# Minimum ML confidence below which keyword signals can freely override
+# Domain score must exceed the ML evidence score by at least this margin
+# to trigger an override. Prevents weak domain signals from beating
+# a confident ML prediction.
+HDE_OVERRIDE_MARGIN: float = 0.12
+
+# When ML confidence is below this value the margin requirement is relaxed,
+# allowing weaker domain signals to override an uncertain ML result.
 HDE_LOW_CONFIDENCE_THRESHOLD: float = 0.70
+HDE_OVERRIDE_MARGIN_LOW: float = 0.04
+
+# Absolute minimum domain score below which overrides are never triggered
+# regardless of the ML evidence comparison.
+HDE_CONFLICT_DOMAIN_FLOOR: float = 0.20
+HDE_PROTEST_DOMAIN_FLOOR: float = 0.16
 
 # Category score cap — number of distinct phrase matches that produce score 1.0
 HDE_SCORE_CAP: int = 5
 
-# Conflict override: score must exceed this to override non-conflict prediction
-HDE_CONFLICT_OVERRIDE_SCORE: float = 0.40
+# Peace/diplomacy dampening: when peace_score exceeds conflict_score by this
+# ratio, a valid conflict override is suppressed.
+HDE_DIPLOMACY_DAMPENING_SCORE: float = 0.45
+HDE_PEACE_CONFLICT_RATIO: float = 0.65
 
-# Protest override: score must exceed this to override non-protest prediction
-HDE_PROTEST_OVERRIDE_SCORE: float = 0.35
-
-# Diplomacy/peace dampening: if both conflict and these scores are high,
-# reduce the chance of overriding to conflict
-HDE_DIPLOMACY_DAMPENING_SCORE: float = 0.50
-
-# Minimum indicator count required for an override at medium confidence
-HDE_MIN_INDICATORS_MEDIUM: int = 3
-
-# Minimum indicator count required for an override at low confidence
-HDE_MIN_INDICATORS_LOW: int = 2
-
-# Category weights applied during scoring (conflict sub-categories)
+# Category weights applied during domain scoring
 HDE_CATEGORY_WEIGHTS: dict[str, float] = {
     "missile":    1.0,
     "airstrike":  1.0,
@@ -58,3 +64,34 @@ HDE_CATEGORY_WEIGHTS: dict[str, float] = {
     "economy":    0.5,
     "disaster":   0.5,
 }
+
+# Integer geopolitical context weights used by the contextual explanation engine.
+# Determines which context is dominant when multiple category groups match.
+HDE_CONTEXT_WEIGHTS: dict[str, int] = {
+    "missile":    10,
+    "airstrike":  10,
+    "terrorism":  10,
+    "nuclear":    10,
+    "military":   8,
+    "shelling":   8,
+    "conflict":   8,
+    "insurgency": 7,
+    "coup":       7,
+    "weapon":     7,
+    "naval":      6,
+    "cyber":      6,
+    "casualty":   6,
+    "border":     5,
+    "protest":    9,
+    "diplomacy":  3,
+    "economy":    2,
+    "disaster":   2,
+}
+
+# Minimum weighted-score lead the dominant context must hold over the
+# second-highest context for the contrast sentence to be included.
+HDE_DOMINANT_CONTRAST_THRESHOLD: int = 4
+
+# ── Diagnostics ────────────────────────────────────────────────────────────
+
+DEBUG_INTELLIGENCE: bool = False

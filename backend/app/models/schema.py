@@ -13,10 +13,12 @@ class PredictionResult(BaseModel):
     original_prediction: str
     overridden: bool
     override_reason: str
+    dominant_category: str
     matched_categories: list[str]
     matched_keywords: list[str]
     keyword_score: float
     override_score: float
+    category_scores: dict[str, float]
 
 
 class RegionMapEntry(BaseModel):

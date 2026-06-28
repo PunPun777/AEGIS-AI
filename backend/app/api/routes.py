@@ -24,13 +24,16 @@ def analyze_news():
     for text in news_list:
         result = predict(text)
         region = get_region(text)
-        grouped.setdefault(region, []).append({
-            "title": text,
+        event = {
+            "title":      text,
             "prediction": result["prediction"],
             "confidence": result["confidence"],
-            "severity": result["severity"],
+            "severity":   result["severity"],
             "explanation": result["explanation"],
-        })
+        }
+        if "_diagnostics" in result:
+            event["_diagnostics"] = result["_diagnostics"]
+        grouped.setdefault(region, []).append(event)
 
     output = {}
     for region, events in grouped.items():

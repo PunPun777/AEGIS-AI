@@ -98,9 +98,10 @@ Severity is deterministic given the same prediction and text input. It does not 
 ## Observations
 
 - High accuracy (~97–99%)
-- Strong keyword detection
+- Strong keyword detection for obvious conflict/protest events
 - Limited semantic generalization
 - Confidence scores skew high due to heuristic training labels; values should be interpreted relative to each other rather than as calibrated probabilities
+- **Critical Finding**: Testing of the Hybrid Decision Engine revealed that the model frequently predicts the "normal" class with extremely high confidence for complex geopolitical headlines, limiting the effectiveness of hybrid decision architecture.
 - Severity is entirely rule-based; it reflects lexical escalation signals, not deeper semantic understanding
 
 ---
@@ -109,6 +110,7 @@ Severity is deterministic given the same prediction and text input. It does not 
 
 - Misclassification of edge cases
 - Over-reliance on keywords
+- The original three-class model (conflict, protest, normal) frequently over-predicts "normal" with very high confidence.
 - Limited contextual reasoning
 - Confidence scores are not calibrated (temperature scaling not applied)
 - Severity keyword list is fixed and does not adapt to emerging terminology
@@ -117,9 +119,13 @@ Severity is deterministic given the same prediction and text input. It does not 
 
 ## Future Improvements
 
-- Train on real geopolitical datasets
+- **Phase 5.7: Intelligence Model V2** (Active Roadmap Milestone)
+  - Retrain DistilBERT on a dedicated, expanded geopolitical dataset
+  - Improve dataset balancing to fix the "normal" class over-prediction
+  - Introduce richer geopolitical labels beyond the original 3 classes
+  - Establish robust evaluation metrics (Precision, Recall, F1, Confusion Matrix)
+  - Improve conflict recognition and hybrid decision support
 - Apply confidence calibration (temperature scaling, Platt scaling)
 - Replace rule-based severity with a learned severity classifier
 - Add contextual embeddings
-- Use multi-label classification
 - Incorporate sentiment + NER

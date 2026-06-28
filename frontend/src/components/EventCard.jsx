@@ -3,6 +3,7 @@ import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
 import ExplanationPanel from "./intelligence/ExplanationPanel";
 import HybridDecisionPanel from "./intelligence/HybridDecisionPanel";
+import DiagnosticsPanel from "./intelligence/DiagnosticsPanel";
 
 const EventCard = ({ news }) => {
   return (
@@ -26,6 +27,7 @@ const EventCard = ({ news }) => {
         categories={news.matched_categories}
         keywords={news.matched_keywords}
       />
+      <DiagnosticsPanel diagnostics={news._diagnostics} />
     </div>
   );
 };
