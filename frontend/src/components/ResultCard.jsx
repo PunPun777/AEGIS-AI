@@ -3,6 +3,7 @@ import ConfidenceIndicator from "./ConfidenceIndicator";
 import SeverityBadge from "./SeverityBadge";
 import ExplanationPanel from "./intelligence/ExplanationPanel";
 import HybridDecisionPanel from "./intelligence/HybridDecisionPanel";
+import DiagnosticsPanel from "./intelligence/DiagnosticsPanel";
 
 /** Maps prediction labels to display metadata */
 const PREDICTION_META = {
@@ -85,6 +86,7 @@ const ResultCard = ({ result }) => {
         categories={matched_categories}
         keywords={matched_keywords}
       />
+      <DiagnosticsPanel diagnostics={result._diagnostics} />
     </div>
   );
 };
