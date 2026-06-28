@@ -94,6 +94,17 @@
 
 ---
 
+## Phase 6.5 — Completed
+
+- Geopolitical Domain Intelligence Layer (`domain_knowledge.py`)
+- Centralized vocabulary covering 21+ categories (conflict, protest, nuclear, cyber, etc.)
+- Extended region extraction covering 8 major geopolitical zones
+- Intelligent Keyword Matcher (`keyword_matcher.py`) with longest-phrase priority, compound matching, and category scoring
+- Refactored `severity_service.py` and `explanation_service.py` to use centralized vocabulary and matcher
+- Prepared shared intelligence architecture for future Multi-source OSINT and NER integration
+
+---
+
 ## Phase 7 — Planned
 
 - Multi-source OSINT ingestion (GDELT, ACLED, NewsAPI)

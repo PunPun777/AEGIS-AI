@@ -11,12 +11,12 @@ NLP Classification (DistilBERT)
     |
 Signal Confidence (softmax)
     |
-Event Severity (rule-based)
-    |
-Explainable Intelligence (modular keyword mapping)
-    |
-Region Extraction (keyword matching)
-    |
+  Event Severity (using Domain Knowledge & Keyword Matcher)
+      |
+  Explainable Intelligence (using Domain Knowledge & Keyword Matcher)
+      |
+  Region Extraction (using Domain Knowledge & Keyword Matcher)
+      |
 Weighted TES Calculation
     |
 Anomaly Detection (threshold check)
@@ -40,7 +40,9 @@ app/
 ├── api/
 │   └── routes.py         HTTP endpoint definitions
 ├── core/
-│   └── config.py         Centralized configuration constants
+│   ├── config.py             Centralized configuration constants
+│   ├── domain_knowledge.py   Geopolitical vocabulary and categories
+│   └── keyword_matcher.py    Reusable keyword matching engine
 ├── ml/
 │   └── model_loader.py   Model and tokenizer initialization
 ├── models/
@@ -68,8 +70,10 @@ Contains all business logic. Each service is a standalone module with a single r
 **ML Layer** (`ml/model_loader.py`):
 Loads the DistilBERT model and tokenizer at startup. Exports module-level `model` and `tokenizer` objects consumed by the predictor service.
 
-**Configuration Layer** (`core/config.py`):
-Stores constants: model path, RSS URL, news limit, label map. All services import configuration from this single source.
+**Core Layer** (`core/`):
+- `config.py`: Stores constants: model path, RSS URL, news limit, label map. All services import configuration from this single source.
+- `domain_knowledge.py`: Single source of truth for geopolitical vocabulary, covering 21+ semantic categories and extended regions.
+- `keyword_matcher.py`: Stateless engine for matching phrases. Implements longest-phrase priority, covered-span deduplication, and category scoring. Used by multiple downstream services.
 
 **Schema Layer** (`models/schema.py`):
 Defines Pydantic models for request validation and response serialization. Includes `TextInput` (request) and `PredictionResult` (response with `prediction`, `confidence`, `severity`, and `explanation`), as well as `IntelligenceMapResponse` and `RegionMapEntry`.
