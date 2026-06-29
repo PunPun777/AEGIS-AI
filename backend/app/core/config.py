@@ -5,8 +5,8 @@ RSS_URL = "https://feeds.bbci.co.uk/news/world/rss.xml"
 NEWS_LIMIT = 15
 
 LABEL_MAP = {
-    0: "conflict",
-    1: "normal",
+    0: "normal",
+    1: "conflict",
     2: "protest"
 }
 
