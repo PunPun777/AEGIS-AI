@@ -9,14 +9,19 @@ from app.services.hybrid_decision_service import decide
 
 
 def predict(text: str) -> dict:
+    # Normalise input: strip surrounding whitespace and lowercase so that the
+    # keyword_matcher's exclusion pre-pass and domain scoring operate on a
+    # consistent surface form.  distilbert-base-uncased lowercases internally,
+    # so this is safe for the tokenizer as well.
+    norm_text = text.strip().lower()
+
     inputs = tokenizer(
-        text,
+        norm_text,
         return_tensors="pt",
         truncation=True,
         max_length=128,        # matches training max_length; prevents length distribution mismatch
         padding="max_length",  # ensures consistent input shape for the classifier head
     )
-
 
     with torch.no_grad():
         outputs = model(**inputs)
@@ -26,8 +31,9 @@ def predict(text: str) -> dict:
     ml_confidence = probabilities[0][pred_index].item()
     ml_prediction = _cfg.LABEL_MAP[pred_index]
 
-    decision = decide(text, ml_prediction, ml_confidence)
+    decision = decide(norm_text, ml_prediction, ml_confidence)
     expl = decision.explanation
+
 
     result = {
         "prediction":          decision.prediction,
