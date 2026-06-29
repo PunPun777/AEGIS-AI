@@ -132,11 +132,11 @@ def _peace_dampens(conflict_score: float, peace: float) -> bool:
     if peace < HDE_DIPLOMACY_DAMPENING_SCORE:
         return False
     if conflict_score <= 0:
-        return True
+        return False   # no conflict signal present — nothing to dampen
     return (peace / conflict_score) >= HDE_PEACE_CONFLICT_RATIO
 
-
 # ── Public decision function ──────────────────────────────────────────────────
+
 
 def decide(
     text: str,
