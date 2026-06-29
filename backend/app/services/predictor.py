@@ -9,7 +9,14 @@ from app.services.hybrid_decision_service import decide
 
 
 def predict(text: str) -> dict:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=128,        # matches training max_length; prevents length distribution mismatch
+        padding="max_length",  # ensures consistent input shape for the classifier head
+    )
+
 
     with torch.no_grad():
         outputs = model(**inputs)
