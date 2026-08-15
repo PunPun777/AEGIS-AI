@@ -509,6 +509,142 @@ ALL_NORMAL_KEYWORDS: frozenset[str] = frozenset().union(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
+# FALSE-POSITIVE EXCLUSION VOCABULARY
+#
+# These phrases, when present in a headline, indicate that the text is NOT
+# describing a genuine geopolitical threat despite surface-level lexical
+# overlap with conflict/protest vocabulary (e.g. "blasts" in political
+# rhetoric vs. "blast" in kinetic attack reporting).
+#
+# The HDE calls has_match(text, FALSE_POSITIVE_EXCLUSIONS) as a pre-pass
+# guard. A match causes both the conflict and protest domain scores to be
+# forced to 0.0 before the override arithmetic runs, ensuring the ML
+# prediction is retained without interference from spurious keyword hits.
+#
+# Naming convention (sub-groups exported for future per-category diagnostics):
+#   FP_CAMPAIGN_EXCLUSIONS   — domestic political campaign rhetoric
+#   FP_ENTERTAINMENT_EXCLUSIONS — pop-culture / awards / entertainment
+#   FP_CLIMATE_EXCLUSIONS    — meteorological / weather / climate events
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Domestic political campaign rhetoric that reuses conflict-adjacent language
+# (e.g. "senator blasts rival", "fundraiser for veterans", "campaign event").
+FP_CAMPAIGN_EXCLUSIONS: frozenset[str] = frozenset({
+    "fundraising",
+    "fundraiser",
+    "fundraising event",
+    "fundraising campaign",
+    "campaign fundraiser",
+    "blasts rival",
+    "blasts opponent",
+    "blasts president",
+    "blasts senator",
+    "blasts governor",
+    "blasts administration",
+    "political blasts",
+    "campaign blasts",
+    "vanity projects",
+    "vanity project",
+    "campaign event",
+    "campaign rally",
+    "stump speech",
+    "attack ad",
+    "attack ads",
+    "political attack",
+    "opposition attack",
+    "policy attack",
+})
+
+# Entertainment, pop-culture, and awards-show vocabulary that overlaps with
+# protest/conflict signal words (e.g. "BET awards", "tribute concert",
+# "tears audience", "box office hit").
+FP_ENTERTAINMENT_EXCLUSIONS: frozenset[str] = frozenset({
+    "bet awards",
+    "grammy awards",
+    "grammy award",
+    "oscar awards",
+    "oscar ceremony",
+    "emmy awards",
+    "emmy award",
+    "bafta awards",
+    "tony awards",
+    "golden globes",
+    "awards show",
+    "awards ceremony",
+    "award show",
+    "music tribute",
+    "tribute concert",
+    "tribute album",
+    "tribute performance",
+    "tribute show",
+    "steal the show",
+    "steals the show",
+    "stole the show",
+    "steal show",
+    "box office",
+    "box office hit",
+    "box office record",
+    "film premiere",
+    "movie premiere",
+    "red carpet",
+    "music video",
+    "chart-topping",
+    "chart topping",
+    "debut album",
+    "album release",
+    "concert tour",
+    "world tour",
+    "celebrity",
+    "pop star",
+})
+
+# Meteorological, climatological, and weather-related vocabulary that
+# overlaps with conflict/disaster signal words (e.g. "heatwave deaths",
+# "temperature hits record", "weather record broken").
+FP_CLIMATE_EXCLUSIONS: frozenset[str] = frozenset({
+    "heatwave",
+    "heat wave",
+    "heat dome",
+    "extreme heat",
+    "record heat",
+    "scorching heat",
+    "weather record",
+    "temperature record",
+    "temperature hits",
+    "temperature reaches",
+    "record temperature",
+    "all-time high temperature",
+    "all-time low temperature",
+    "record-breaking temperature",
+    "hottest day",
+    "coldest day",
+    "hottest year",
+    "hottest month",
+    "climate record",
+    "rainfall record",
+    "flooding record",
+    "snowfall record",
+    "storm surge",
+    "tropical storm",
+    "hurricane season",
+    "monsoon season",
+    "drought conditions",
+    "wildfire season",
+    "wildfire smoke",
+    "air quality index",
+})
+
+# Single combined set used by the HDE pre-pass guard.
+# Import this constant — not the sub-groups — for runtime exclusion checks.
+FALSE_POSITIVE_EXCLUSIONS: frozenset[str] = frozenset().union(
+    FP_CAMPAIGN_EXCLUSIONS,
+    FP_ENTERTAINMENT_EXCLUSIONS,
+    FP_CLIMATE_EXCLUSIONS,
+)
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # EXPLANATION GROUPS
 # Each group maps to a human-readable intelligence sentence.
 # Services should iterate over these to generate analyst explanations.

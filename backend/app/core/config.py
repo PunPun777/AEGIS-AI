@@ -17,23 +17,23 @@ LABEL_MAP = {
 HDE_PREDICTION_BASE_WEIGHT: dict[str, float] = {
     "conflict": 1.0,
     "protest":  0.7,
-    "normal":   0.4,
+    "normal":   0.25,   # reduced from 0.4 — compensates for model over-confidence on Normal
 }
 
 # Domain score must exceed the ML evidence score by at least this margin
 # to trigger an override. Prevents weak domain signals from beating
 # a confident ML prediction.
-HDE_OVERRIDE_MARGIN: float = 0.12
+HDE_OVERRIDE_MARGIN: float = 0.06         # reduced from 0.12 — allows domain signals to override sooner
 
 # When ML confidence is below this value the margin requirement is relaxed,
 # allowing weaker domain signals to override an uncertain ML result.
 HDE_LOW_CONFIDENCE_THRESHOLD: float = 0.70
-HDE_OVERRIDE_MARGIN_LOW: float = 0.04
+HDE_OVERRIDE_MARGIN_LOW: float = 0.02     # reduced from 0.04 — relaxed further for low-confidence ML predictions
 
 # Absolute minimum domain score below which overrides are never triggered
 # regardless of the ML evidence comparison.
-HDE_CONFLICT_DOMAIN_FLOOR: float = 0.20
-HDE_PROTEST_DOMAIN_FLOOR: float = 0.16
+HDE_CONFLICT_DOMAIN_FLOOR: float = 0.15   # reduced from 0.20 — allows single-hit conflict signals to qualify
+HDE_PROTEST_DOMAIN_FLOOR: float = 0.12   # reduced from 0.16 — symmetrically lowers protest override floor
 
 # Category score cap — number of distinct phrase matches that produce score 1.0
 HDE_SCORE_CAP: int = 5

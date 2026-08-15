@@ -36,8 +36,10 @@ from app.core.domain_knowledge import (
     CASUALTY_KEYWORDS,
     BORDER_KEYWORDS,
     PROTEST_KEYWORDS,
+    FALSE_POSITIVE_EXCLUSIONS,
 )
-from app.core.keyword_matcher import match_phrases, score_categories
+from app.core.keyword_matcher import match_phrases, score_categories, has_match
+
 from app.services.decision_explainer import DecisionExplanation, build as build_explanation
 
 
@@ -90,6 +92,20 @@ def _ml_evidence_score(ml_prediction: str, ml_confidence: float) -> float:
     return round(ml_confidence * base, 4)
 
 
+def _is_false_positive(text: str) -> bool:
+    """
+    Return True if the normalised text matches any phrase in
+    FALSE_POSITIVE_EXCLUSIONS, indicating that conflict/protest-adjacent
+    vocabulary is being used in a non-geopolitical context.
+
+    When True, the caller must force conflict_score = protest_score = 0.0
+    so that the HDE override arithmetic is bypassed entirely and the ML
+    prediction is preserved unchanged.
+    """
+    return has_match(text, FALSE_POSITIVE_EXCLUSIONS)
+
+
+
 def _conflict_domain_score(text: str) -> tuple[float, int, list[str], dict[str, float]]:
     raw_scores = score_categories(text, _CONFLICT_CATEGORY_MAP)
     active_cats = {cat: sc for cat, sc in raw_scores.items() if sc > 0}
@@ -132,11 +148,11 @@ def _peace_dampens(conflict_score: float, peace: float) -> bool:
     if peace < HDE_DIPLOMACY_DAMPENING_SCORE:
         return False
     if conflict_score <= 0:
-        return True
+        return False   # no conflict signal present — nothing to dampen
     return (peace / conflict_score) >= HDE_PEACE_CONFLICT_RATIO
 
-
 # ── Public decision function ──────────────────────────────────────────────────
+
 
 def decide(
     text: str,
@@ -144,6 +160,29 @@ def decide(
     ml_confidence: float,
 ) -> HybridDecision:
     ml_score = _ml_evidence_score(ml_prediction, ml_confidence)
+
+    # ── False-positive pre-pass ───────────────────────────────────────────────
+    # If the text contains a known false-positive exclusion phrase, bypass all
+    # domain override logic immediately.  Both domain scores are forced to 0.0
+    # so the ML prediction is returned as-is, without any HDE interference.
+    if _is_false_positive(text):
+        expl = build_explanation(
+            text, ml_prediction, ml_confidence,
+            outcome="kept",
+            conflict_score=0.0,
+            ml_score=ml_score,
+            conflict_categories=[],
+            category_scores={},
+            peace_score=0.0,
+        )
+        return HybridDecision(
+            prediction=ml_prediction,
+            original_prediction=ml_prediction,
+            confidence=ml_confidence,
+            overridden=False,
+            override_reason="False-positive exclusion phrase detected; domain override suppressed.",
+            explanation=expl,
+        )
 
     conflict_score, conflict_indicators, conflict_cats, cat_scores = _conflict_domain_score(text)
     protest_score, protest_indicators, protest_kws = _protest_domain_score(text)
